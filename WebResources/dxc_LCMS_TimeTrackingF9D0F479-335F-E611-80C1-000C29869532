@@ -1,0 +1,322 @@
+// Globals 
+var minimumConf = 0;
+var timer = new TimerTracking(0,0,0,"dxc_timetracking", 15, new Date());
+var stoped = false;
+var formId = null;
+var DolarCurrencyid = null;
+//--------------------------------------- CRM Form related functions ---------------------------------------
+
+function OnLoadLCMSTimer(){
+	if(IsValidFormFoTracking()){
+		window.addEventListener("beforeunload", OnPageLeave, false);
+		Xrm.Page.getAttribute("dxc_timetracking").setValue("00:00:00");
+
+		formId = Xrm.Page.data.entity.getId();
+		GetDolarCurrencyId();//Xrm.Page.getAttribute("transactioncurrencyid").getValue();
+		stoped = false;
+
+		var minimumTime = GetMinimumLCMSTime();
+		timer = new TimerTracking(0,0,0,"dxc_timetracking",minimumTime, new Date());
+
+		timer.StartTracking();
+	}
+	else
+	{
+		stoped = true;
+	}
+}
+
+function OnResumeTimer(){
+	timer.StartTracking();
+}
+
+function OnPauseTimer(){
+	timer.StopTracking();
+}
+
+function OnStopTimer(){
+	GetDolarCurrencyId();
+	
+	stoped = true;
+  	Xrm.Page.ui.refreshRibbon();
+	timer.SaveTime();
+	CreateTimeCard();
+
+}
+
+function OnRenewTimer(){
+	GetDolarCurrencyId();
+	OnLoadLCMSTimer();
+	Xrm.Page.ui.refreshRibbon();
+	Xrm.Page.ui.clearFormNotification("LCMSSuccess");
+}
+
+function RefreshTimeCardList(){
+		Xrm.Page.getControl("Timecard").refresh();
+}
+
+function IsValidFormFoTracking()
+{
+	return (Xrm.Page.ui.getFormType() != 1);
+}
+
+
+//-- This couple of function are to control the ribbons buttons visibility by the Workbench rule
+function ButtonsVisibilityFirst(){
+	if(!IsValidFormFoTracking()){
+		return false;
+	}
+	else{
+		return !stoped;
+	}
+}
+
+function ButtonsVisibilitySecond(){
+	if(!IsValidFormFoTracking()){
+		return false;
+	}
+	else{
+		return stoped
+	}
+}
+//--
+
+function OnPageLeave(e) {
+	console.log("hidden function");
+	if(stoped != true){
+			var timeCard = TimeCardData();
+			SDK.JQuery.createRecordSync(
+			     timeCard,
+			     "dxc_timecard",
+			     function (timeCard) {
+			      	console.log("Timecard created!");
+			     },
+			     function(e){
+			     	console.log(e.message);
+			     }
+		    );
+	}
+        stoped = true;
+}
+
+//--------------------------------------- CRM OData/Rest related functions ---------------------------------------
+
+function GetDolarCurrencyId(){
+	try{
+		//TODO: make the call
+		SDK.JQuery.retrieveMultipleRecords(
+	     	"TransactionCurrency",
+	     	"$select=TransactionCurrencyId&$filter=ISOCurrencyCode eq 'USD'&$top=1",
+	    	function (results) {
+				if (results[0] != null) {
+					DolarCurrencyid = results[0].TransactionCurrencyId;
+				}
+				else {
+					errorHandler("Error catched trying to get the dolar currency.");
+				}
+		     },
+		     errorHandler,
+		     function () {
+		      //OnComplete handler
+		    }
+	    );
+	 }
+ 	catch(e){
+ 		errorHandler(e.message);
+ 	}
+ }
+
+function GetMinimumLCMSTime(){
+	try{
+		//TODO: make the call
+		SDK.JQuery.retrieveMultipleRecords(
+	     	"dxc_lcmsconfig",
+	     	'$select=dxc_MinimumTimeMinutes&$top=1',
+	    	function (results) {
+				var firstResult = results[0];
+				if (firstResult != null) {
+					minimumConf = results[0].dxc_MinimumTimeMinutes;
+					timer.setMinimum(results[0].dxc_MinimumTimeMinutes);
+				}
+				else {
+					timer.setMinimum(0);
+					errorHandler("No LCMS Configuration records are available.");
+				}
+		     },
+		     errorHandler,
+		     function () {
+		      //OnComplete handler
+		    }
+	    );
+	 	return minimumConf;
+	 }
+ 	catch(e){
+ 		errorHandler(e.message);
+ 	}
+ }
+
+
+ function TimeCardData(){
+ 	var timeCard = {};
+	timeCard.dxc_LawsuitId = { Id: formId, LogicalName: "incident"};
+	timeCard.dxc_StartDateTime = timer.getStartDate();
+	timeCard.dxc_EndDateTime = new Date();
+	timeCard.dxc_Duration = timer.DurationInMinutes().toString();
+	timeCard.dxc_Regarding = { Value: '100000001'};
+	if(DolarCurrencyid != null)
+		timeCard.TransactionCurrencyId = { Id: DolarCurrencyid, LogicalName: "transactioncurrency"};
+	return timeCard;
+ }
+
+function CreateTimeCard(){
+	var timeCard = TimeCardData();
+	 SDK.JQuery.createRecord(
+	     timeCard,
+	     "dxc_timecard",
+	     function (timeCard) {
+	      	Xrm.Page.ui.setFormNotification("Timecard has been created.", "INFO ", "LCMSSuccess");
+	      	RefreshTimeCardList();
+	     },
+	     errorHandler
+    );
+}
+
+
+function errorHandler(error) {
+	Xrm.Page.ui.clearFormNotification("LCMSError")
+ 	Xrm.Page.ui.setFormNotification(error.message, "EROR", "LCMSError");
+}
+
+//--------------------------------------- Helper Fuctions ---------------------------------------
+
+Number.prototype.padLeft = function (n,str){
+    return Array(n-String(this).length+1).join(str||'0')+this;
+}
+
+
+//--------------------------------------- Timer related Fuctions ---------------------------------------
+
+function TimerTracking(hours, minutes, seconds, showTimerIn, minimum, startDate) {	
+	this.intervalTimerTracking  = null;
+	this.seconds = seconds;
+	this.minutes  = minutes;
+	this.hours  = hours;
+	this.isRunning  = false;
+	this.showTimerIn = showTimerIn;
+	this.minimum = minimum;
+	this.startDate = startDate;
+	
+	
+	var getTime = function() { 
+		return hours.padLeft(2,0) + ':' + minutes.padLeft(2,0) + ':' + seconds.padLeft(2,0);
+	};
+
+	var getMinimumTime = function(){
+		var minMinute = getMinimumMinute();
+		return getMinimumHour(minMinute).padLeft(2,0) + ':' + minMinute.padLeft(2,0) + ':00';
+	};
+
+	var getMinimumMinute = function(){
+		var minimumMinute = 0;
+		if(minutes == 0) {
+			minutes = 1;
+		}
+		
+		for (var i = 1; i <= (60/minimum); i++) {
+			if(minutes > (minimum*(i-1)) && minutes <= (minimum*i))
+					minimumMinute = minimum*i;
+		}
+		if(minimumMinute!=60)
+			if(minimumMinute == 0)
+				return minimum;
+			else
+			return minimumMinute;
+		else
+			return 0;
+	};
+
+	var getMinimumHour = function(minMinute) { 
+		var minMin = getMinimumMinute();
+		if((minMin == 0 || minMin == 60) && seconds > 0)
+			return hours+1;
+		else{
+			return hours;
+		}
+	};
+
+	this.getMinutes = function(){ return minutes; };
+	this.setMinutes = function(mm){ minutes = mm; };
+	this.getHours = function(){ return horus; };
+	this.setHours = function(hh){ hours = hh; };
+	this.setMinimum = function(min){ minimum = min; };
+	this.getStartDate = function(min){ return startDate; };
+
+	this.Time = function() { 
+		return getTime(); 
+	};
+
+	this.MinimumTime = function(){
+		return getMinimumTime();
+	};
+
+
+	this.MinimumMinute = function(){
+		return getMinimumMinute();
+	}
+
+	this.MinimumHour = function(){
+		return getMinimumHour();
+	}
+	
+	this.DurationInMinutes = function() {
+		return (getMinimumHour()*60) + getMinimumMinute();
+	}
+
+	this.DurationInHours = function() {
+		return ((getMinimumHour()*60) + getMinimumMinute())/60;
+	}
+
+	this.StartTracking = function(){
+		if(!this.isRunning){
+			intervalTimerTracking = setInterval(myTimer, 1000);
+			this.isRunning = true;
+		}
+	};
+
+	this.StopTracking = function(){
+		if(this.isRunning){ 
+			clearInterval(intervalTimerTracking); 
+			this.isRunning = false;
+		}
+	};
+
+	var myTimer = function() {
+		try{
+		    seconds++;		
+		    if(seconds >= 60){
+		    	minutes++;
+		    	seconds = 0;
+		    	if(minutes >= 60){
+		    		hours++;
+		    		minutes = 0;
+		    	}
+		    }
+		    Xrm.Page.getAttribute(showTimerIn).setValue(getTime());
+		}
+	    catch(e){
+	    	clearInterval(intervalTimerTracking);
+	    	console.log(e.message);
+	    }
+	};
+
+	this.SaveTime = function() {
+		Xrm.Page.getAttribute(showTimerIn).setValue(getMinimumTime());
+		
+		if(this.isRunning){ 
+			clearInterval(intervalTimerTracking);
+		}
+	    
+	    return getMinimumTime();
+	};
+}
+

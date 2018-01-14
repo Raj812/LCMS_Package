@@ -1,0 +1,256 @@
+<ImportExportXml version="8.2.0002.0154" SolutionPackageVersion="8.2" languagecode="1033" generatedBy="CrmLive" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <SolutionManifest>
+    <UniqueName>LegalCaseManagementPackage</UniqueName>
+    <LocalizedNames>
+      <LocalizedName description="Legal Case Management" languagecode="1033" />
+    </LocalizedNames>
+    <Descriptions />
+    <Version>2.0.0</Version>
+    <Managed>0</Managed>
+    <Publisher>
+      <UniqueName>dxctechnology</UniqueName>
+      <LocalizedNames>
+        <LocalizedName description="DXC Technology" languagecode="1033" />
+      </LocalizedNames>
+      <Descriptions />
+      <EMailAddress xsi:nil="true"></EMailAddress>
+      <SupportingWebsiteUrl xsi:nil="true"></SupportingWebsiteUrl>
+      <CustomizationPrefix>dxc</CustomizationPrefix>
+      <CustomizationOptionValuePrefix>28221</CustomizationOptionValuePrefix>
+      <Addresses>
+        <Address>
+          <AddressNumber>1</AddressNumber>
+          <AddressTypeCode>1</AddressTypeCode>
+          <City xsi:nil="true"></City>
+          <County xsi:nil="true"></County>
+          <Country xsi:nil="true"></Country>
+          <Fax xsi:nil="true"></Fax>
+          <FreightTermsCode xsi:nil="true"></FreightTermsCode>
+          <ImportSequenceNumber xsi:nil="true"></ImportSequenceNumber>
+          <Latitude xsi:nil="true"></Latitude>
+          <Line1 xsi:nil="true"></Line1>
+          <Line2 xsi:nil="true"></Line2>
+          <Line3 xsi:nil="true"></Line3>
+          <Longitude xsi:nil="true"></Longitude>
+          <Name xsi:nil="true"></Name>
+          <PostalCode xsi:nil="true"></PostalCode>
+          <PostOfficeBox xsi:nil="true"></PostOfficeBox>
+          <PrimaryContactName xsi:nil="true"></PrimaryContactName>
+          <ShippingMethodCode>1</ShippingMethodCode>
+          <StateOrProvince xsi:nil="true"></StateOrProvince>
+          <Telephone1 xsi:nil="true"></Telephone1>
+          <Telephone2 xsi:nil="true"></Telephone2>
+          <Telephone3 xsi:nil="true"></Telephone3>
+          <TimeZoneRuleVersionNumber xsi:nil="true"></TimeZoneRuleVersionNumber>
+          <UPSZone xsi:nil="true"></UPSZone>
+          <UTCOffset xsi:nil="true"></UTCOffset>
+          <UTCConversionTimeZoneCode xsi:nil="true"></UTCConversionTimeZoneCode>
+        </Address>
+        <Address>
+          <AddressNumber>2</AddressNumber>
+          <AddressTypeCode>1</AddressTypeCode>
+          <City xsi:nil="true"></City>
+          <County xsi:nil="true"></County>
+          <Country xsi:nil="true"></Country>
+          <Fax xsi:nil="true"></Fax>
+          <FreightTermsCode xsi:nil="true"></FreightTermsCode>
+          <ImportSequenceNumber xsi:nil="true"></ImportSequenceNumber>
+          <Latitude xsi:nil="true"></Latitude>
+          <Line1 xsi:nil="true"></Line1>
+          <Line2 xsi:nil="true"></Line2>
+          <Line3 xsi:nil="true"></Line3>
+          <Longitude xsi:nil="true"></Longitude>
+          <Name xsi:nil="true"></Name>
+          <PostalCode xsi:nil="true"></PostalCode>
+          <PostOfficeBox xsi:nil="true"></PostOfficeBox>
+          <PrimaryContactName xsi:nil="true"></PrimaryContactName>
+          <ShippingMethodCode>1</ShippingMethodCode>
+          <StateOrProvince xsi:nil="true"></StateOrProvince>
+          <Telephone1 xsi:nil="true"></Telephone1>
+          <Telephone2 xsi:nil="true"></Telephone2>
+          <Telephone3 xsi:nil="true"></Telephone3>
+          <TimeZoneRuleVersionNumber xsi:nil="true"></TimeZoneRuleVersionNumber>
+          <UPSZone xsi:nil="true"></UPSZone>
+          <UTCOffset xsi:nil="true"></UTCOffset>
+          <UTCConversionTimeZoneCode xsi:nil="true"></UTCConversionTimeZoneCode>
+        </Address>
+      </Addresses>
+    </Publisher>
+    <RootComponents>
+      <RootComponent type="1" schemaName="account" behavior="2" />
+      <RootComponent type="1" schemaName="activitypointer" behavior="2" />
+      <RootComponent type="1" schemaName="appointment" behavior="2" />
+      <RootComponent type="1" schemaName="connection" behavior="2" />
+      <RootComponent type="1" schemaName="contact" behavior="2" />
+      <RootComponent type="1" schemaName="dxc_aka" behavior="0" />
+      <RootComponent type="1" schemaName="dxc_awardpayment" behavior="0" />
+      <RootComponent type="1" schemaName="dxc_bpf_c46e3c8e25304b8ba48798b546926082" behavior="0" />
+      <RootComponent type="1" schemaName="dxc_caseaction" behavior="0" />
+      <RootComponent type="1" schemaName="dxc_caseactiontype" behavior="0" />
+      <RootComponent type="1" schemaName="dxc_caseprocessflow" behavior="0" />
+      <RootComponent type="1" schemaName="dxc_charge" behavior="0" />
+      <RootComponent type="1" schemaName="dxc_claim" behavior="0" />
+      <RootComponent type="1" schemaName="dxc_department" behavior="0" />
+      <RootComponent type="1" schemaName="dxc_division" behavior="0" />
+      <RootComponent type="1" schemaName="dxc_evidence" behavior="0" />
+      <RootComponent type="1" schemaName="dxc_lcmsconfig" behavior="0" />
+      <RootComponent type="1" schemaName="dxc_matter" behavior="0" />
+      <RootComponent type="1" schemaName="dxc_offer" behavior="0" />
+      <RootComponent type="1" schemaName="dxc_outcometype" behavior="0" />
+      <RootComponent type="1" schemaName="dxc_participants" behavior="0" />
+      <RootComponent type="1" schemaName="dxc_pleatype" behavior="0" />
+      <RootComponent type="1" schemaName="dxc_sentenceaction" behavior="0" />
+      <RootComponent type="1" schemaName="dxc_sentencetype" behavior="0" />
+      <RootComponent type="1" schemaName="dxc_settlementagreement" behavior="0" />
+      <RootComponent type="1" schemaName="dxc_settlementoffer" behavior="0" />
+      <RootComponent type="1" schemaName="dxc_statute" behavior="0" />
+      <RootComponent type="1" schemaName="dxc_timecard" behavior="0" />
+      <RootComponent type="1" schemaName="incident" behavior="1" />
+      <RootComponent type="1" schemaName="phonecall" behavior="2" />
+      <RootComponent type="1" schemaName="processsession" behavior="2" />
+      <RootComponent type="1" schemaName="recurringappointmentmaster" behavior="2" />
+      <RootComponent type="1" schemaName="serviceappointment" behavior="2" />
+      <RootComponent type="1" schemaName="sharepointdocumentlocation" behavior="2" />
+      <RootComponent type="1" schemaName="systemuser" behavior="1" />
+      <RootComponent type="1" schemaName="task" behavior="2" />
+      <RootComponent type="20" id="{3375dd81-d6b5-e711-80ed-3863bb369ea8}" behavior="0" />
+      <RootComponent type="20" id="{86d41173-d7b5-e711-80ed-3863bb369ea8}" behavior="0" />
+      <RootComponent type="20" id="{d23eb44e-d3b5-e711-80ed-3863bb369ea8}" behavior="0" />
+      <RootComponent type="29" id="{07148a30-9ad3-48f4-bfc6-97c44d0a6e4a}" behavior="0" />
+      <RootComponent type="29" id="{1041f4b2-79ef-4759-8bc0-a4f542990cc5}" behavior="0" />
+      <RootComponent type="29" id="{202fe037-2a8a-4a65-be57-70053444ed16}" behavior="0" />
+      <RootComponent type="29" id="{297d38aa-a7cc-4f60-b3cc-2d6f4a1c2bea}" behavior="0" />
+      <RootComponent type="29" id="{29e9a99f-6bee-4431-9b13-3f894e1243d4}" behavior="0" />
+      <RootComponent type="29" id="{2ab20263-96ae-e711-80ec-3863bb369ea8}" behavior="0" />
+      <RootComponent type="29" id="{4ac8dc42-c33f-e711-80d5-00505630031c}" behavior="0" />
+      <RootComponent type="29" id="{550a2685-3f2d-4bfa-b13b-cdcb89a14b56}" behavior="0" />
+      <RootComponent type="29" id="{5602b534-9f6e-4833-8881-cc5f012aa484}" behavior="0" />
+      <RootComponent type="29" id="{5bd1814a-3e78-e711-80e7-3863bb360d60}" behavior="0" />
+      <RootComponent type="29" id="{6673dcbb-582e-4dbc-8690-0263e8196c7c}" behavior="0" />
+      <RootComponent type="29" id="{6f4aabba-f75b-47fa-bcd1-cf29b2c2fd46}" behavior="0" />
+      <RootComponent type="29" id="{824853ea-35df-4346-a389-98401e668548}" behavior="0" />
+      <RootComponent type="29" id="{9c0353eb-64d0-4a0f-85ae-c9d131979b7d}" behavior="0" />
+      <RootComponent type="29" id="{a821f588-5714-465b-a565-4fb63c7eeb58}" behavior="0" />
+      <RootComponent type="29" id="{a896bc55-8a1d-44ac-a254-991a8d41c1ad}" behavior="0" />
+      <RootComponent type="29" id="{b6889593-1563-47cc-9790-a3e46823f6bd}" behavior="0" />
+      <RootComponent type="29" id="{c46e3c8e-2530-4b8b-a487-98b546926082}" behavior="0" />
+      <RootComponent type="29" id="{c5c71749-063c-44f9-896b-85255e474d5f}" behavior="0" />
+      <RootComponent type="29" id="{c606ce14-866c-4620-8390-0d269dc033c7}" behavior="0" />
+      <RootComponent type="29" id="{c9cba156-8fff-46b7-9887-9e223e33efe3}" behavior="0" />
+      <RootComponent type="29" id="{cc3d7a01-820d-e711-80d2-00505630031c}" behavior="0" />
+      <RootComponent type="29" id="{cc8c5a05-ba4f-46b8-8311-0f2957b6c3d6}" behavior="0" />
+      <RootComponent type="29" id="{cd84dcc4-76a2-4793-a2fa-ba1a53c5992d}" behavior="0" />
+      <RootComponent type="29" id="{d07aefb9-90ae-e711-80ec-3863bb369ea8}" behavior="0" />
+      <RootComponent type="29" id="{d7f441e0-3681-49da-bf22-b05e947a52a3}" behavior="0" />
+      <RootComponent type="29" id="{db8b67b3-933c-4219-9b95-c991fffe5e54}" behavior="0" />
+      <RootComponent type="29" id="{e032bb40-b977-e711-80e7-3863bb369ea8}" behavior="0" />
+      <RootComponent type="29" id="{f4babe04-8b90-49be-9f1d-044808db4924}" behavior="0" />
+      <RootComponent type="60" id="{1070bf52-e989-4eae-95b6-0c37e140d823}" behavior="0" />
+      <RootComponent type="60" id="{15c35fa5-925c-47ae-ab06-e4cd698676b5}" behavior="0" />
+      <RootComponent type="60" id="{16654191-19ad-48ca-9e46-c4b4fbdad76f}" behavior="0" />
+      <RootComponent type="60" id="{2df9d578-6227-e611-80e4-5065f38a4b81}" behavior="0" />
+      <RootComponent type="60" id="{549a8aa3-c349-4ab9-8bac-4873fa9a7a5c}" behavior="0" />
+      <RootComponent type="60" id="{7ab85380-af6c-499f-ab33-4a97e5e91d10}" behavior="0" />
+      <RootComponent type="60" id="{8306a373-3d7d-4e08-95cd-7b3f396ca0cb}" behavior="0" />
+      <RootComponent type="60" id="{95088bb2-eb07-e611-80c6-00505630031c}" behavior="0" />
+      <RootComponent type="60" id="{a7cbf5cc-290d-4f28-9f68-0f0125a611e3}" behavior="0" />
+      <RootComponent type="60" id="{c2cd9e55-d4b4-4b55-9951-16ead79643e5}" behavior="0" />
+      <RootComponent type="60" id="{c54de1de-9601-e611-80c6-00505630031c}" behavior="0" />
+      <RootComponent type="60" id="{ee38a12b-7327-e611-80ea-5065f38b11d1}" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_/Icon_Claimx16" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_/Icon_Claimx32" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_/Image/amber.png" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_/Image/Back.png" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_/Image/cancel.png" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_/Image/completed.png" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_/Image/green.png" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_/Image/Next.png" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_/Image/red.png" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_/Image/Refresh.png" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_/images/attached.png" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_/images/draft.png" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_/images/missing.png" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_/images/rejected.png" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_/images/sealed.png" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_/NotesUpload.htm" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_/Pages/ImageGallery.html" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_/script.js" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_/Script/SDK.REST.js" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_/style.css" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_AKA_Icon" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_Award_Iconx16" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_Award_Iconx32" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_Award_Payment_Icon" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_CaseAction.OnLoad.js" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_CaseDocket_DUeDate.js" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_CaseDocket_Onload" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_CaseEvent.js" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_CaseParticipant_OnLoad.js" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_Catalog_Iconx16" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_Catalog_Iconx32" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_charge32x32_Icon" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_Charge_Icon" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_cog_iconx16" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_cog_iconx32" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_Common.js" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_Department_Iconx16" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_Department_Iconx32" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_Division_Icon" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_DXC_Logo" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_Evidence_Icon" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_icon_check_32x32" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_icon_clock_16" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_icon_clock_32" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_icon_pausa_32" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_icon_pause_16" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_icon_play_16" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_icon_play_32" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_icon_reload_16" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_icon_reload_32" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_icon_stop_16x16" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_jquery_1.11.2min.js" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_lawsuit_js" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_LCMS_TimeTracking" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_Matter_IconX16" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_Matter_IconX32" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_ODataHelper" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_Offer_Iconx16" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_Offer_Iconx32" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_Participant_Icon" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_Settlement_Agreement_Iconx16" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_Settlement_Agreement_Iconx32" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_SetTodaysDate" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_Statute_Icon" behavior="0" />
+      <RootComponent type="61" schemaName="dxc_Timecard_Icon" behavior="0" />
+      <RootComponent type="61" schemaName="dxc__case_actionx16" behavior="0" />
+      <RootComponent type="61" schemaName="dxc__case_actionx32" behavior="0" />
+      <RootComponent type="61" schemaName="dxc__Court_Icon" behavior="0" />
+      <RootComponent type="61" schemaName="dxc__images_evidence16x16" behavior="0" />
+      <RootComponent type="61" schemaName="dxc__images_evidence32x32" behavior="0" />
+      <RootComponent type="62" schemaName="dxc_LCMS" behavior="0" />
+      <RootComponent type="80" schemaName="dxc_LCMS" behavior="0" />
+    </RootComponents>
+    <MissingDependencies>
+      <MissingDependency>
+        <Required key="0" type="1" schemaName="msdyn_postruleconfig" displayName="Post Rule Configuration" solution="ActivityFeedsCore (8.2.0.0)" />
+        <Dependent key="1" type="80" schemaName="dxc_LCMS" displayName="LCMS" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required key="0" type="1" schemaName="msdyn_postruleconfig" displayName="Post Rule Configuration" solution="ActivityFeedsCore (8.2.0.0)" />
+        <Dependent key="2" type="62" schemaName="dxc_LCMS" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required key="3" type="1" schemaName="msdyn_postconfig" displayName="Post Configuration" solution="ActivityFeedsCore (8.2.0.0)" />
+        <Dependent key="1" type="80" schemaName="dxc_LCMS" displayName="LCMS" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required key="3" type="1" schemaName="msdyn_postconfig" displayName="Post Configuration" solution="ActivityFeedsCore (8.2.0.0)" />
+        <Dependent key="2" type="62" schemaName="dxc_LCMS" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required key="4" type="61" schemaName="msdyn_/Images/AppModule_Default_Icon.png" displayName="msdyn_/Images/AppModule_Default_Icon.png" solution="AppModuleWebResources (2.0)" />
+        <Dependent key="1" type="80" schemaName="dxc_LCMS" displayName="LCMS" />
+      </MissingDependency>
+    </MissingDependencies>
+  </SolutionManifest>
+</ImportExportXml>

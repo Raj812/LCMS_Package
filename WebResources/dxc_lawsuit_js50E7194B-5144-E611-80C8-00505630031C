@@ -1,0 +1,21 @@
+function Show_Hide_Criminal_Tab()  {
+
+   if (Xrm.Page.getAttribute("dxc_divisionid").getValue() == null) {
+
+      Xrm.Page.ui.tabs.get("Case_Information").sections.get("Charges").setVisible(false);
+      Xrm.Page.ui.tabs.get("Case_Information").sections.get("Arrest_Details").setVisible(false);    
+
+   } else {
+
+       var type = Xrm.Page.getAttribute("dxc_divisionid").getValue();
+
+       if (type[0].name == "Criminal") {
+
+      Xrm.Page.ui.tabs.get("Case_Information").sections.get("Charges").setVisible(true);
+      Xrm.Page.ui.tabs.get("Case_Information").sections.get("Arrest_Details").setVisible(true);
+
+       } 
+
+   }
+
+}

@@ -1,0 +1,1298 @@
+/// <reference path="/intellisense/XrmPage-vsdoc.js" />
+/// <reference path="jquery_1.11.2.min.js" />
+// *****************************************************************************
+// constants
+// *****************************************************************************
+
+FormTypes = {
+    All: 0,
+    CRM_FORM_TYPE_CREATE: 1,
+    CRM_FORM_TYPE_UPDATE: 2,
+    CRM_FORM_TYPE_READONLY: 3,
+    CRM_FORM_TYPE_DISABLED: 4,
+    CRM_FORM_TYPE_QUICK_CREATE: 5,
+    CRM_FORM_TYPE_BULK_EDIT: 6
+    // CRM_FORM_TYPE_READ_OPTIMIZED: 11, 
+    // CRM_FORM_TYPE_PROPERTIES: 3,
+    // CRM_FORM_TYPE_DEACTIVATED: 4,
+};
+
+
+RequirementLevel = {
+    NotRequired: "none",
+    Required: "required",
+    Recommended: "recommended"
+};
+
+Constants = {
+    DecimalRadix: 10,
+    InitiationMaxLength: 10000,
+    SummaryMaxLength: 10000,
+    HoursPerDay: 24,
+    MinutesPerHour: 60,
+    SecondsPerMinute: 60,
+    MillisecondsPerSecond: 1000,
+    MillisecondsPerDay: function () {
+        var millisecondsPerDay = this.HoursPerDay * this.MinutesPerHour * this.SecondsPerMinute * this.MillisecondsPerSecond;
+        return millisecondsPerDay;
+    },
+    SuperUserRoles: ["System Administrator", "System Admin MODIFIED"],
+    EmptyGuid: "{00000000-0000-0000-0000-000000000000}",
+    HoursAndMinutesFormatString: "{0}:{1}",
+    CASEACTIVITY_GRID_ID: 'Case_Activity',
+    CASEACTIVITY_CRIMINAL_GRID_ID: 'Case_Activity_Criminal',
+    CASEPARTICIPANT_GRID_ID: 'casepartyparticipant'
+};
+
+REGULAR_EXPRESSIONS = {
+    Trim: /^\s+|\s+$/g,
+    StartsWith: "^",
+    EndsWith: "$",
+    MilitaryTime: /^([0-1]?\d|2[0-3])[0-5]\d$/,
+    FormatString: /\{\d+\}/g,
+    ValidSSN: /^(\d{3})([ \-]?)(\d{2})\2\d{4}$/,
+    PhoneNumbers: /^\(?(\d{3})\)?[-. ]?(\d{3})[-. ]?(\d{4})$/,
+    NonNumericCharacters: /^\d/g,
+    NonAlphaNumericCharacters: /\W/gi,
+    MinutesAndSeconds: /^\d{1,2}:[0-5]?\d$/,
+    HoursAndMinutes: /^\d{1,2}:[0-5]?\d$/,
+    HoursAndMinutesExt: /^\d{1,3}:[0-5]?\d$/,
+    Guid: /^(\{){0,1}[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}(\}){0,1}$/
+};
+
+// *****************************************************************************
+// global methods
+// *****************************************************************************
+String.prototype.format = function () {
+    var pattern = REGULAR_EXPRESSIONS.FormatString;
+    var args = arguments;
+    return this.replace(pattern, function (capture) { return args[capture.match(/\d+/)]; });
+}
+
+String.prototype.trim = function () {
+    return this.replace(REGULAR_EXPRESSIONS.Trim, "");
+}
+
+String.prototype.stringStartsWith = function (str) {
+    var regEx = new RegExp(REGULAR_EXPRESSIONS.StartsWith + str, "gi");
+    return regEx.test(this);
+}
+
+String.prototype.stringEndsWith = function (str) {
+    var regEx = new RegExp(str + REGULAR_EXPRESSIONS.EndsWith, "gi");
+    return regEx.test(this);
+}
+
+String.prototype.containsCaseSensitive = function (str) {
+    var regEx = new RegExp(str, "g");
+    return regEx.test(this);
+}
+
+String.prototype.contains = function (str) {
+    var regEx = new RegExp(str, "gi");
+    return regEx.test(this);
+}
+
+String.prototype.isGuid = function () {
+    var regEx = new RegExp(REGULAR_EXPRESSIONS.Guid);
+    return regEx.test(this);
+}
+
+String.prototype.prepend = function (str) {
+    return str + this;
+}
+
+String.prototype.prependWithSpace = function (str) {
+    return str + " " + this;
+}
+
+String.prototype.append = function (str) {
+    return this + str;
+}
+
+String.prototype.appendWithSpace = function (str) {
+    return this + " " + str;
+}
+
+Array.prototype.forEach = function (fn, thisObj) {
+    var scope = thisObj || window;
+    for (var i = 0, j = this.length; i < j; ++i) {
+        fn.call(scope, this[i], i, this);
+    }
+};
+
+PicklistData = function (value, text) {
+    this.Value = value;
+    this.Text = text;
+}
+
+LookupData = function (id, name, type, code, abbreviation, description) {
+    this.Id = id;
+    this.Name = name;
+    this.Type = type;
+    this.Code = code;
+    this.Abbreviation = abbreviation;
+    this.Description = description;
+}
+
+ArrayContains = function (array, value, shouldCompareToLookupData, shouldCompareToPicklistData) {
+    var i = array.length;
+
+    while (i--) {
+        if (shouldCompareToLookupData) {
+            if (array[i] instanceof LookupData) {
+                if (LookupFieldService.ValueContainedInLookup(value, array[i])) {
+                    return true;
+                }
+            }
+        }
+        else if (shouldCompareToPicklistData) {
+            if (array[i] instanceof PicklistData) {
+                if (UIService.ValueContainedInPicklist(value, array[i])) {
+                    return true;
+                }
+            }
+        }
+        else {
+            if (array[i] == value) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+// *****************************************************************************
+// UI Service 
+// *****************************************************************************
+UIService = {
+    // Use this to wait for any grid to load, then pass the Grid class
+    // to the callback and start running the specific gridOnLoad code
+    SubGridOnLoad: function (Grid, cbRefresh) {
+        var self = this,
+            delay = 500,
+            grid = $('#' + Grid.elemId);
+        if (grid == null || grid.length == 0 || grid[0] == undefined) {
+            setTimeout(function () { self.SubGridOnLoad(Grid, cbRefresh); }, delay);
+            return;
+        }
+        if (grid[0].control == null || grid[0].control == undefined || grid[0].control.get_totalRecordCount() == -1) {
+            setTimeout(function () { self.SubGridOnLoad(Grid, cbRefresh); }, delay);
+            return;
+        }
+        // Ok grid is finally loaded now
+        grid[0].control.add_onRefresh(cbRefresh);
+        cbRefresh();
+    },
+    GetElementById: function (id) {
+        var element = Xrm.Page.ui.controls.get(id);
+        // var element = document.getElementById(id);
+        return element;
+    },
+    ShowElement: function (element) {
+        if (element != null) {
+            if (typeof (element.setVisible) == "function") {
+                element.setVisible(true);
+            }
+            else {
+                element.style.display = "inline";
+            }
+        }
+    },
+    ShowElementById: function (id) {
+        var element = this.GetElementById(id);
+        this.ShowElement(element);
+    },
+    HideElement: function (element) {
+        if (element != null) {
+            if (typeof (element.setVisible) == "function") {
+                element.setVisible(false);
+            }
+            else {
+                element.style.display = "none";
+            }
+        }
+    },
+    HideElementById: function (id) {
+        var element = this.GetElementById(id);
+        this.HideElement(element);
+    },
+    SetElementDisplay: function (element, shouldShow) {
+        if (shouldShow) {
+            this.ShowElement(element);
+        }
+        else {
+            this.HideElement(element);
+        }
+    },
+    SetElementDisplayById: function (id, shouldShow) {
+        var element = this.GetElementById(id);
+        this.SetElementDisplay(element, shouldShow);
+    },
+    GetAttributeById: function (id) {
+        var attribute = Xrm.Page.data.entity.attributes.get(id);
+        return attribute;
+    },
+    FireOnChange: function (attribute) {
+        if (attribute != null && typeof (attribute.fireOnChange) == "function") {
+            attribute.fireOnChange();
+        }
+    },
+    FireOnChangeById: function (id) {
+        var attribute = this.GetAttributeById(id);
+        this.FireOnChange(attribute);
+    },
+    GetFieldValue: function (field) {
+        var value = "";
+
+        if (field != null && typeof (field.getAttribute) == "function") {
+            var attribute = field.getAttribute();
+
+            if (attribute != null && typeof (attribute.getValue) == "function") {
+                value = attribute.getValue();
+            }
+        }
+
+        return value;
+    },
+    GetFieldValueById: function (id) {
+        var field = this.GetElementById(id);
+        return this.GetFieldValue(field);
+    },
+    GetFieldText: function (field) {
+        var value = "";
+
+        if (field != null && typeof (field.getAttribute) == "function") {
+            var attribute = field.getAttribute();
+
+            if (attribute != null && typeof (attribute.getText) == "function") {
+                value = attribute.getText();
+            }
+        }
+
+        return value;
+    },
+    GetFieldTextById: function (id) {
+        var field = this.GetElementById(id);
+        return this.GetFieldText(field);
+    },
+    SetSubmitMode: function (field, submitMode) {
+        if (field != null && typeof (field.getAttribute) == "function") {
+            var attribute = field.getAttribute();
+
+            if (attribute != null && typeof (attribute.setSubmitMode) == "function") {
+                attribute.setSubmitMode(submitMode);
+            }
+        }
+    },
+    SetSubmitModeById: function (id, submitMode) {
+        var field = this.GetElementById(id);
+        this.SetSubmitMode(field, submitMode);
+    },
+    ForceSubmit: function (field) {
+        this.SetSubmitMode(field, "always");
+    },
+    ForceSubmitById: function (id, submitMode) {
+        this.SetSubmitModeById(id, "always");
+    },
+    SetFieldValue: function (field, value) {
+        if (field != null && typeof (field.getAttribute) == "function") {
+            var attribute = field.getAttribute();
+
+            if (attribute != null && typeof (attribute.setValue) == "function") {
+                attribute.setValue(value);
+                this.ForceSubmit(field);
+            }
+        }
+    },
+    SetElementValue: function (element, value) {
+        if (element != null) {
+            var id = element.id;
+            var field = UIService.GetElementById(id);
+            this.SetFieldValue(field, value);
+        }
+
+        /*
+        if (field != null) {
+        field.DataValue = value;
+
+        if (forceSubmit) {
+        field.ForceSubmit = forceSubmit;
+        }
+        }
+        */
+    },
+    SetElementValueById: function (id, value) {
+        var field = UIService.GetElementById(id);
+        this.SetFieldValue(field, value);
+    },
+    SetFieldValueById: function (id, value) {
+        var field = this.GetElementById(id);
+        this.SetFieldValue(field, value);
+    },
+    ClearField: function (field, forceSubmit) {
+        // this.SetFieldValue(field, null, forceSubmit);
+        this.SetFieldValue(field, null);
+    },
+    ClearFieldById: function (id, forceSubmit) {
+        // this.SetFieldValueById(id, null, forceSubmit);
+        this.SetFieldValueById(id, null);
+    },
+    FieldHasValue: function (field) {
+        var fieldHasValue = false;
+
+        if (field != null) {
+            var value = UIService.GetFieldValue(field);
+            fieldHasValue = (value != null && value != "");
+        }
+
+        return fieldHasValue;
+    },
+    FieldHasValueById: function (fieldId) {
+        var field = UIService.GetElementById(fieldId);
+        return UIService.FieldHasValue(field);
+    },
+    GetFormType: function () {
+        var formType = Xrm.Page.ui.getFormType();
+        return formType;
+    },
+    IsCreateForm: function () {
+        var formType = Xrm.Page.ui.getFormType();
+        return (formType == FormTypes.CRM_FORM_TYPE_CREATE);
+    },
+    IsQuickCreateForm: function () {
+        var formType = Xrm.Page.ui.getFormType();
+        return (formType == FormTypes.CRM_FORM_TYPE_QUICK_CREATE);
+    },
+    IsCreateOrQuickCreateForm: function () {
+        var formType = Xrm.Page.ui.getFormType();
+        return (formType == FormTypes.CRM_FORM_TYPE_CREATE || formType == FormTypes.CRM_FORM_TYPE_QUICK_CREATE);
+    },
+    IsUpdateForm: function () {
+        var formType = Xrm.Page.ui.getFormType();
+        return (formType == FormTypes.CRM_FORM_TYPE_UPDATE);
+    },
+    SetTabDisplay: function (tab, shouldShow) {
+        if (tab != null) {
+            this.SetElementDisplay(tab, shouldShow);
+        }
+    },
+    SetTabDisplayById: function (tabId, shouldShow) {
+        var tab = this.GetTabById(tabId);
+        this.SetTabDisplay(tab, shouldShow);
+    },
+    SetTabDisplayState: function (tab, displayState) {
+        if (tab != null) {
+            if (typeof (tab.setDisplayState) == "function") {
+                tab.setDisplayState(displayState);
+            }
+        }
+    },
+    SetTabDisplayStateById: function (tabId, displayState) {
+        var tab = UIService.GetTabById(tabId);
+        UIService.SetTabDisplayState(tab, displayState);
+    },
+    ExpandTab: function (tab) {
+        UIService.SetTabDisplayState(tab, "expanded");
+    },
+    ExpandTabById: function (tabId) {
+        UIService.SetTabDisplayStateById(tabId, "expanded");
+    },
+    CollapseTab: function (tab) {
+        UIService.SetTabDisplayState(tab, "collapsed");
+    },
+    CollapseTabById: function (tabId) {
+        UIService.SetTabDisplayStateById(tabId, "collapsed");
+    },
+    GetTab: function (tabIndex) {
+        var tab = Xrm.Page.ui.tabs.get(tabIndex);
+        return tab;
+    },
+    GetTabById: function (tabId) {
+        var tab = Xrm.Page.ui.tabs.get(tabId);
+        return tab;
+    },
+    GetSection: function (tabIndex, sectionIndex) {
+        var tab = this.GetTab(tabIndex);
+        var section = tab.sections.get(sectionIndex);
+        return section;
+    },
+    GetSectionById: function (tabId, sectionId) {
+        var tab = this.GetTabById(tabId),
+            section = (tab != null ? tab.sections.get(sectionId) : null);
+        return section;
+    },
+    ShowSection: function (section) {
+        if (section != null) {
+            this.ShowElement(section);
+        }
+    },
+    ShowSectionById: function (tabId, sectionId) {
+        var section = this.GetSectionById(tabId, sectionId);
+        this.ShowSection(section);
+    },
+    SetSectionDisplay: function (section, shouldShow) {
+        if (section != null) {
+            this.SetElementDisplay(section, shouldShow);
+        }
+    },
+    SetSectionDisplayById: function (tabId, sectionId, shouldShow) {
+        var section = this.GetSectionById(tabId, sectionId);
+        this.SetSectionDisplay(section, shouldShow);
+    },
+    IsSubGrid: function (control, index) {
+        var isSubGrid = false;
+
+        if (control != null && typeof (control.getControlType) == "function") {
+            isSubGrid = (control.getControlType() == "subgrid");
+        }
+
+        return isSubGrid;
+    },
+    Save: function () {
+        try {
+            Xrm.Page.data.entity.save();
+        }
+        catch (ex) {
+            alert("Unable to save this record.");
+        }
+    },
+    ControlHasAttribute: function (control) {
+        var controlType = "";
+
+        if (control != null && typeof (control.getControlType) == "function") {
+            controlType = control.getControlType();
+        }
+
+        // controlType != "webresource" && 
+        var controlHasAttribute = controlType != "iframe" && controlType != "subgrid";
+        return controlHasAttribute;
+    },
+    ControlHasAttributeById: function (id) {
+        var control = this.GetElementById(id);
+        var controlHasAttribute = this.ControlHasAttribute(control);
+        return controlHasAttribute;
+    },
+    SetDisableControl: function (control, shouldDisable) {
+        if (this.ControlHasAttribute(control)) {
+            control.setDisabled(shouldDisable);
+        }
+    },
+    SetDisableControlById: function (controlId, shouldDisable) {
+        var control = this.GetElementById(controlId);
+        this.SetDisableControl(control, shouldDisable);
+    },
+    SetDisableForm: function (shouldDisable) {
+        Xrm.Page.ui.controls.forEach(function (control, index) {
+            UIService.SetDisableControl(control, shouldDisable);
+        });
+    },
+    DisableForm: function () {
+        this.SetDisableForm(true);
+    },
+    GetEntityId: function () {
+        var entityId = Xrm.Page.data.entity.getId();
+        return entityId;
+    },
+    GetEntityName: function () {
+        var entityName = Xrm.Page.data.entity.getEntityName();
+        return entityName;
+    },
+    SetRequiredLevel: function (attribute, requiredLevel) {
+        if (attribute != null && typeof (attribute.setRequiredLevel) == "function") {
+            attribute.setRequiredLevel(requiredLevel);
+        }
+    },
+    SetRequiredLevelById: function (id, requiredLevel) {
+        var attribute = this.GetAttributeById(id);
+        this.SetRequiredLevel(attribute, requiredLevel);
+    },
+    IsAttributeDirty: function (attribute) {
+        var isDirty = false;
+
+        if (attribute != null && typeof (attribute.getIsDirty) == "function") {
+            isDirty = attribute.getIsDirty();
+        }
+
+        return isDirty;
+    },
+    IsAttributeDirtyById: function (id) {
+        var attribute = this.GetAttributeById(id);
+        var isDirty = this.IsAttributeDirty(attribute);
+        return isDirty;
+    },
+    SetControlRequiredLevel: function (control, requiredLevel) {
+        if (control != null && typeof (control.getAttribute) == "function") {
+            var attribute = control.getAttribute();
+            this.SetRequiredLevel(attribute, requiredLevel);
+        }
+    },
+    SetControlRequiredLevelById: function (id, requiredLevel) {
+        var control = this.GetElementById(id);
+        this.SetControlRequiredLevel(control, requiredLevel);
+    },
+    ResetField: function (field) {
+        this.SetFieldValue(field, field.DefaultValue);
+    },
+    ResetFieldById: function (id) {
+        var field = this.GetAttributeById(id);
+        this.ResetField(field);
+    },
+    ResetElement: function (element) {
+        this.SetElementValue(element, element.DefaultValue);
+    },
+    ResetElementById: function (id) {
+        var element = this.GetElementById(id);
+
+        if (element != null) {
+            this.SetElementValueById(id, element.DefaultValue);
+        }
+    },
+    GetPageContext: function () {
+        var context = Xrm.Page.context;
+        return context;
+    },
+    GetServerUrl: function () {
+        var context = this.GetPageContext();
+        var serverUrl = "";
+
+        if (context != null && typeof (context.getClientUrl) == "function") {
+            serverUrl = context.getClientUrl();
+        }
+
+        return serverUrl;
+    },
+    GetOrgName: function () {
+        var context = this.GetPageContext();
+        var orgName = "";
+
+        if (context != null && typeof (context.getOrgUniqueName) == "function") {
+            orgName = context.getOrgUniqueName();
+        }
+
+        return orgName;
+    },
+
+//*************************************************************************************************************************
+    GetODataPath: function (isQuickCreateForm) {
+        /*
+        //debugger;
+        // Seems both QC and normal form now need 3 back dirs, used to be 2 for normal form, 3 for QC form
+        var orgName = this.GetOrgName(),
+            ODataPath = ((true || isQuickCreateForm) ? '../' : '') + '../../' + orgName + '/XRMServices/2011/OrganizationData.svc';
+ 
+
+ return ODataPath;
+        */
+
+        var orgName = this.GetOrgName();
+        var ODataPath = this.GetServerUrl() + "/XRMServices/2011/OrganizationData.svc";
+        return ODataPath;
+    },
+    GetIFrame: function (id) {
+        var iFrame = this.GetElementById(id);
+        return iFrame;
+    },
+    SetIFrameBlank: function (iFrame) {
+        var src = "about:blank";
+        this.SetIFrameSrc(iFrame, src);
+    },
+    SetIFrameBlankById: function (id) {
+        var iFrame = this.GetElementById(id);
+        this.SetIFrameBlank(iFrame);
+    },
+    SetIFrameSrc: function (iFrame, src) {
+        if (iFrame != null && typeof (iFrame.setSrc) == "function") {
+            iFrame.setSrc(src);
+        }
+    },
+    SetIFrameSrcById: function (id, src) {
+        var iFrame = this.GetElementById(id);
+        this.SetIFrameSrc(iFrame, src);
+    },
+    SetIFrameDisplay: function (iFrame, shouldShow) {
+        this.SetElementDisplay(iFrame, shouldShow);
+    },
+    SetIFrameDisplayById: function (id, shouldShow) {
+        this.SetElementDisplayById(id, shouldShow);
+    },
+    IsLookup: function (attribute) {
+        var isLookup = false;
+
+        if (attribute != null && typeof (attribute.getAttributeType) == "function") {
+            var attributeType = attribute.getAttributeType();
+            isLookup = (attributeType == "lookup");
+        }
+
+        return isLookup;
+    },
+    IsLookupById: function (id) {
+        var attribute = this.GetAttributeById(id);
+        var isLookup = this.IsLookup(attribute);
+        return isLookup;
+    },
+    SetFieldLabel: function (field, label) {
+
+    },
+    SetFieldLabelById: function (id, label) {
+
+    },
+    SetSectionLabel: function (section, label) {
+
+    },
+    SetSectionLabelById: function (id, label) {
+
+    },
+    SetTabLabel: function (tab, label) {
+
+    },
+    SetTabLabelById: function (id, label) {
+
+    }
+}
+
+// *****************************************************************************
+// Lookup Methods
+// *****************************************************************************
+LookupFieldService = {
+    GetLookupItem: function (lookupField) {
+        var lookupData = null;
+        var lookupItem = null;
+        var lookupName = "";
+
+        if (lookupField != null) {
+            lookupData = UIService.GetFieldValue(lookupField);
+
+            if (lookupData != null) {
+                lookupItem = lookupData[0];
+            }
+        }
+
+        return lookupItem;
+    },
+    GetLookupItemById: function (id) {
+        var lookupField = UIService.GetElementById(id);
+        var lookupItem = LookupFieldService.GetLookupItem(lookupField);
+        return lookupItem;
+    },
+    GetLookupName: function (lookupField) {
+        var lookupItem = this.GetLookupItem(lookupField);
+        var lookupName = "";
+
+        if (lookupItem != null) {
+            lookupName = lookupItem.name;
+        }
+
+        return lookupName;
+    },
+    GetLookupNameById: function (id) {
+        var lookupField = UIService.GetElementById(id);
+        var lookupName = LookupFieldService.GetLookupName(lookupField);
+        return lookupName;
+    },
+    GetLookupValue: function (lookupField) {
+        var lookupItem = this.GetLookupItem(lookupField);
+        var lookupValue = "";
+
+        if (lookupItem != null) {
+            lookupValue = lookupItem.id;
+        }
+
+        return lookupValue;
+    },
+    GetLookupValueById: function (id) {
+        var lookupField = UIService.GetElementById(id);
+        var lookupValue = LookupFieldService.GetLookupValue(lookupField);
+        return lookupValue;
+    },
+    CreateLookupDataValue: function (id, name, type) {
+        var lookupData = new Array();
+        var lookupItem = new Object();
+
+        lookupItem.id = id;
+        lookupItem.name = name;
+        lookupItem.entityType = type;
+
+        lookupData.push(lookupItem);
+
+        return lookupData;
+    },
+    ValueContainedInLookup: function (value, lookupData) {
+        var valueContainedInLookup = false;
+
+        if (lookupData instanceof LookupData) {
+            valueContainedInLookup = (value == lookupData.Code ||
+                                        value == lookupData.Description);
+        }
+
+        return valueContainedInLookup;
+    }
+};
+
+// *****************************************************************************
+// Primary Attribute Methods
+// *****************************************************************************
+function FieldData(name, type) {
+    this.Name = name;
+    this.Field = UIService.GetElementById(name);
+    this.Type = type;
+    this.IsLookup = (type == "Lookup");
+    this.IsPicklist = (type == "Picklist");
+    this.IsOptionSet = (type == "OptionSet");
+    this.IsDate = type.contains("Date");
+    this.IsDateTime = type.contains("DateTime");
+
+    this.getText = function () {
+        var text = "";
+
+        if (this.Field != null) {
+            if (this.IsLookup) {
+                text = LookupFieldService.GetLookupName(this.Field);
+            }
+            else if (this.IsPicklist) {
+                text = this.Field.SelectedText;
+            }
+            else if (this.IsDate) {
+                var dateValue = UIService.GetFieldValue(this.Field);
+
+                if (dateValue != null) {
+                    // getMonth returns months 0-11, add 1 to get 1-12
+                    var month = dateValue.getMonth() + 1;
+                    var day = dateValue.getDate();
+                    var year = dateValue.getFullYear();
+
+                    text = month + "/" + day + "/" + year;
+
+                    if (this.IsDateTime) {
+                        // getMonth returns hours 0-23, add 1 to get 1-12
+                        var hour = dateValue.getHours();
+                        var minutes = dateValue.getMinutes();
+                        var seconds = dateValue.getSeconds();
+                        var displayHour = hour == 12 ? hour : hour % 12;
+                        var AMOrPM = hour >= 12 ? "PM" : "AM";
+
+                        /*
+                        if (seconds < 10 || seconds.length == 1) {
+                        seconds = "0" + seconds;
+                        }
+                        else if (seconds.length == 0) {
+                        seconds = "00";
+                        }
+                        // var timeDisplay = displayHour + ":" + minutes + ":" + seconds + " " + AMOrPM;
+                        */
+
+                        if (minutes < 10 || minutes.length == 1) {
+                            minutes = "0" + minutes;
+                        }
+                        else if (minutes.length == 0) {
+                            minutes = "00";
+                        }
+
+                        var timeDisplay = displayHour + ":" + minutes + " " + AMOrPM;
+                        text += " " + timeDisplay;
+                    }
+                }
+            }
+            else {
+                text = UIService.GetFieldValue(this.Field);
+            }
+        }
+
+        return text;
+    }
+}
+
+PrimaryAttributeService = {
+    PrimaryAttributeFieldId: "",
+    FieldsToConcatenate: [],
+    Initialize: function (primaryAttributeData) {
+        this.PrimaryAttributeFieldId = primaryAttributeData.PrimaryAttributeFieldId;
+        this.FieldsToConcatenate = primaryAttributeData.FieldsToConcatenate;
+        this.CustomFormatter = primaryAttributeData.CustomFormatter;
+    },
+    DefaultFormatter: function (primaryAttributeValue, fieldValuesToConcatenate) {
+        if (fieldValuesToConcatenate != null && fieldValuesToConcatenate.length > 0) {
+            primaryAttributeValue = fieldValuesToConcatenate.join(" - ");
+            UIService.SetFieldValueById(PrimaryAttributeService.PrimaryAttributeFieldId, primaryAttributeValue);
+        }
+    },
+    CustomFormatter: null,
+    SetPrimaryAttribute: function () {
+        var primaryAttributeFieldId = this.PrimaryAttributeFieldId;
+        var fieldsToConcatenate = this.FieldsToConcatenate;
+
+        var primaryAttributeField = UIService.GetElementById(primaryAttributeFieldId);
+
+        if (primaryAttributeField != null) {
+            var primaryAttributeValue = UIService.GetFieldValue(primaryAttributeField);
+
+            var fieldValuesToConcatenate = new Array();
+
+            for (var index in this.FieldsToConcatenate) {
+                if (!isNaN(index)) {
+                    var fieldData = fieldsToConcatenate[index];
+
+                    if (typeof fieldData == "object" && fieldData.getText != null) {
+                        var fieldValue = fieldData.getText();
+
+                        if (fieldValue != null && fieldValue.length > 0) {
+                            fieldValuesToConcatenate.push(fieldValue);
+                        }
+                    }
+                }
+            }
+
+            if (this.CustomFormatter != null && typeof this.CustomFormatter == "function") {
+                // this.CustomFormatter(primaryAttributeValue, fieldValuesToConcatenate);
+                this.CustomFormatter();
+            }
+            else if (this.DefaultFormatter != null && typeof this.DefaultFormatter == "function") {
+                this.DefaultFormatter(primaryAttributeValue, fieldValuesToConcatenate);
+            }
+
+            // if (fieldValuesToConcatenate != null && fieldValuesToConcatenate.length > 0) {
+            //     primaryAttributeValue = fieldValuesToConcatenate.join(" - ");
+            //     UIService.SetFieldValue(primaryAttributeField, primaryAttributeValue, true);
+            // }
+        }
+    },
+    HidePrimaryAttribute: function () {
+        var primaryAttributeFieldId = this.PrimaryAttributeFieldId;
+
+        UIService.HideElementById(primaryAttributeFieldId + "_c");
+        UIService.HideElementById(primaryAttributeFieldId + "_d");
+    }
+};
+
+UserDataService = {
+    GetCurrentUserId: function () {
+        var context = UIService.GetPageContext();
+        var userId = Constants.EmptyGuid;
+
+        if (context != null && typeof (context.getUserId) == "function") {
+            userId = context.getUserId();
+        }
+
+        return userId;
+    },
+    GetCurrentUserData: function () {
+        // debugger;
+        var userId = this.GetCurrentUserId();
+        var oDataPath = UIService.GetODataPath();
+        var filterString = "/SystemUserSet?$filter=SystemUserId eq guid'" + userId + "'";
+        var selectString = "&$select=SystemUserId,DomainName,FullName,csd_CSR";
+        var url = oDataPath + filterString + selectString;
+
+        var userList = null;
+        var userData = null;
+
+        var ajaxOptions = {
+            type: "GET",
+            contentType: "application/json; charset=utf-8",
+            datatype: "json",
+            async: false,
+            url: url,
+            beforeSend: function (XMLHttpRequest) {
+                //Specifying this header ensures that the results will be returned as JSON.     
+                XMLHttpRequest.setRequestHeader("Accept", "application/json");
+            },
+            success: function (data, textStatus, XmlHttpRequest) {
+                //This function will trigger asynchronously if the Retrieve was successful
+                // debugger;
+                userList = data.d.results;
+            },
+            error: function (XmlHttpRequest, textStatus, errorThrown) {
+                //This function will trigger asynchronously if the Retrieve returned an error
+                // debugger;
+                userList = null;
+            }
+        };
+
+        AjaxService.Execute(ajaxOptions);
+
+        if (userList.length > 0) {
+            userData = userList[0];
+        }
+
+        return userData;
+    },
+    GetRoles: function (roleIds) {
+        // debugger;
+        var userId = this.GetCurrentUserId();
+        var oDataPath = UIService.GetODataPath();
+        var filterString = "";
+        var selectString = "&$select=Name,RoleId";
+        var rolesList = null;
+
+        var roleIdFilterList = new Array();
+
+        if (roleIds != null) {
+            $(roleIds).each(function (index, value) {
+                // debugger;
+                if (value != null) {
+                    filterString = "RoleId eq guid'" + value + "'";
+                    roleIdFilterList.push(filterString);
+                }
+            });
+
+            if (roleIdFilterList != null && roleIdFilterList.length > 0) {
+                filterString = roleIdFilterList.join(" or ");
+            }
+        }
+
+        // debugger;
+        var url = oDataPath + "/RoleSet?";
+
+        if (filterString != null && filterString.length > 0) {
+            url += "$filter=" + filterString;
+        }
+
+        url += selectString;
+
+        var ajaxOptions = {
+            type: "GET",
+            contentType: "application/json; charset=utf-8",
+            datatype: "json",
+            async: false,
+            url: url,
+            beforeSend: function (XMLHttpRequest) {
+                //Specifying this header ensures that the results will be returned as JSON.     
+                XMLHttpRequest.setRequestHeader("Accept", "application/json");
+            },
+            success: function (data, textStatus, XmlHttpRequest) {
+                //This function will trigger asynchronously if the Retrieve was successful
+                // debugger;
+                rolesList = data.d.results;
+                // ProcessCustomerAssessmentList(results);
+                // return results;
+            },
+            error: function (XmlHttpRequest, textStatus, errorThrown) {
+                //This function will trigger asynchronously if the Retrieve returned an error
+                // debugger;
+                rolesList = null;
+            }
+        };
+
+        // debugger;
+        AjaxService.Execute(ajaxOptions);
+
+        return rolesList;
+    },
+    GetCurrentUserRoleIds: function () {
+        // debugger;
+        var context = UIService.GetPageContext();
+        var userRoleIds = context.getUserRoles();
+        return userRoleIds;
+    },
+    GetCurrentUserLookupData: function () {
+        var userData = this.GetCurrentUserData();
+        var userLookupData = LookupFieldService.CreateLookupDataValue(userData.SystemUserId, userData.FullName, "systemuser");
+        return userLookupData;
+    },
+    UserInRole: function (roleNameToCheck) {
+        var userRoleIds = UserDataService.GetCurrentUserRoleIds();
+        var userRolesList = UserDataService.GetRoles(userRoleIds);
+
+        var isUserInRole = $.grep(userRolesList, function (value, index) {
+            // debugger;
+            var userRoleName = "";
+            var userRoleId = Constants.EmptyGuid;
+
+            if (value != null) {
+                userRoleName = value.Name;
+                userRoleId = value.RoleId;
+            }
+
+            return (userRoleName == roleNameToCheck);
+        }).length > 0;
+
+        return isUserInRole;
+    },
+    UserInRoleList: function (roleNamesToCheckList) {
+        var userRoleIds = UserDataService.GetCurrentUserRoleIds();
+        var userRolesList = UserDataService.GetRoles(userRoleIds);
+        var isUserInRoleList = false;
+
+        // debugger;
+        // var userRoleNamesList = $(userRolesList).map(function (value, index) { return value.Name; });
+        var userRoleNamesList = $.map(userRolesList, function (value, index) { return value.Name; });
+
+        if (roleNamesToCheckList != null && roleNamesToCheckList.length > 0) {
+            isUserInRoleList = $.grep(userRoleNamesList, function (value, index) {
+                // debugger;
+                var userRoleName = value;
+                return ArrayContains(roleNamesToCheckList, userRoleName, false, false);
+            }).length > 0;
+        }
+
+        return isUserInRoleList;
+    },
+    IsSuperUserFlag: null,
+    IsSuperUser: function () {
+        var isSuperUser = this.IsSuperUserFlag;
+
+        if (isSuperUser == null) {
+            isSuperUser = this.UserInRoleList(Constants.SuperUserRoles);
+            this.IsSuperUserFlag = isSuperUser;
+        }
+
+        return isSuperUser;
+    }
+}
+
+LookupDataService = {
+    GetLookupList: function (entity, columnList, filter, mapper) {
+        var list = [];
+        var lookupList = [];
+        var tempList = [];
+
+        var oDataPath = UIService.GetODataPath();
+        var setName = "/" + entity + "Set";
+        var columnNames = columnList.join(", ");
+        var selectString = "?$select=" + columnNames;
+        var filterString = filter ? "&$filter=" + filter : "";
+
+        var url = oDataPath + setName + selectString + filterString;
+        // &$skiptoken=1,'dxc_casetypeid','%7BA5A87DD4-16E9-E411-80D9-005056830A44%7D','%7B8614334D-97E3-E411-80D9-005056830A44%7D'
+
+        var ajaxOptions = {
+            type: "GET",
+            contentType: "application/json; charset=utf-8",
+            datatype: "json",
+            async: false,
+            url: url,
+            beforeSend: function (XMLHttpRequest) {
+                //Specifying this header ensures that the results will be returned as JSON.     
+                XMLHttpRequest.setRequestHeader("Accept", "application/json");
+            },
+            success: function (data, textStatus, XmlHttpRequest) {
+                //This function will trigger asynchronously if the Retrieve was successful
+                // debugger;
+                tempList = data.d; //.results;
+
+            },
+            error: function (XmlHttpRequest, textStatus, errorThrown) {
+                //This function will trigger asynchronously if the Retrieve returned an error
+                // debugger;
+                tempList = null;
+            }
+        };
+
+        AjaxService.Execute(ajaxOptions);
+
+        // debugger;
+        if (tempList != null && tempList.results != null && tempList.results.length > 0) {
+            list.push(tempList.results);
+        }
+
+        if (list != null) {
+            if (tempList != null && tempList.__next != null) {
+                // ajaxOptions.url = tempList.__next;
+                // AjaxService.Execute(ajaxOptions);
+            }
+
+            if (list != null && list.length > 0) {
+                // map list to lookup list
+                if (mapper != null && typeof (mapper) == "function") {
+                    lookupList = $.map(list, mapper);
+
+                    /*
+                    lookupList = $.map(list, function (value) {
+                        var item = new LookupData(value.id, value.name, value.type, value.code, value.abbreviation, value.description);
+                        return item;
+                    });
+                    */
+                }
+                else {
+                    lookupList = list;
+                }
+            }
+        }
+
+        return lookupList;
+    }
+}
+
+SavedQueryDataService = {
+    GetSavedQueriesForEntity: function (entity) {
+        // debugger;
+        var oDataPath = UIService.GetODataPath();
+        var filterString = "/SavedQuerySet?$filter=ReturnedTypeCode eq '" + entity + "'";
+        var selectString = "&$select=SavedQueryId,Name,FetchXml";
+        var url = oDataPath + filterString + selectString;
+
+        var queryList = null;
+        var queryData = null;
+
+        var ajaxOptions = {
+            type: "GET",
+            contentType: "application/json; charset=utf-8",
+            datatype: "json",
+            async: false,
+            url: url,
+            beforeSend: function (XMLHttpRequest) {
+                //Specifying this header ensures that the results will be returned as JSON.     
+                XMLHttpRequest.setRequestHeader("Accept", "application/json");
+            },
+            success: function (data, textStatus, XmlHttpRequest) {
+                //This function will trigger asynchronously if the Retrieve was successful
+                // debugger;
+                queryList = data.d.results;
+            },
+            error: function (XmlHttpRequest, textStatus, errorThrown) {
+                //This function will trigger asynchronously if the Retrieve returned an error
+                // debugger;
+                queryList = null;
+            }
+        };
+
+        AjaxService.Execute(ajaxOptions);
+
+        return queryList;
+    },
+    GetSavedQuery: function (entity, query) {
+        var oDataPath = UIService.GetODataPath();
+        var filterString = "/SavedQuerySet?$filter=ReturnedTypeCode eq '" + entity + "' and Name eq '" + query + "'";
+        var selectString = "&$select=SavedQueryId,Name,FetchXml";
+        var url = oDataPath + filterString + selectString;
+
+        var queryList = null;
+        var queryData = null;
+
+        var ajaxOptions = {
+            type: "GET",
+            contentType: "application/json; charset=utf-8",
+            datatype: "json",
+            async: false,
+            url: url,
+            beforeSend: function (XMLHttpRequest) {
+                //Specifying this header ensures that the results will be returned as JSON.     
+                XMLHttpRequest.setRequestHeader("Accept", "application/json");
+            },
+            success: function (data, textStatus, XmlHttpRequest) {
+                //This function will trigger asynchronously if the Retrieve was successful
+                // debugger;
+                queryList = data.d.results;
+            },
+            error: function (XmlHttpRequest, textStatus, errorThrown) {
+                //This function will trigger asynchronously if the Retrieve returned an error
+                // debugger;
+                queryList = null;
+            }
+        };
+
+        AjaxService.Execute(ajaxOptions);
+
+        if (queryList.length > 0) {
+            queryData = queryList[0];
+        }
+
+        return queryData;
+    }
+}
+
+// *****************************************************************************
+// AjaxService
+// *****************************************************************************
+AjaxService = {
+    GetDefaultOptions: function () {
+        var defaultOptions = {
+            type: "GET",
+            contentType: "application/json; charset=utf-8",
+            datatype: "json",
+            async: false,
+            beforeSend: function (xhr) {
+                //Specifying this header ensures that the results will be returned as JSON.     
+                xhr.setRequestHeader("Accept", "application/json");
+            },
+            error: function (xhr, textStatus, errorThrown) {
+                //This function will trigger asynchronously if the Retrieve returned an error
+                // debugger;
+                userData = null;
+            }
+        };
+
+        return defaultOptions;
+    },
+    Execute: function (options) {
+        var ajaxOptions = this.GetDefaultOptions();
+
+        if (options != null) {
+            ajaxOptions = options;
+        }
+
+        $.ajax(ajaxOptions);
+    }
+}
+
+// *****************************************************************************
+// AjaxService
+// *****************************************************************************
+
+DateTimeService = {
+    AbbreviatedDaysOfWeek: ["Sun", "Mon", "Tue", "Wed", "Th", "Fri", "Sat"],
+    DaysOfWeek: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+    ToStandardDate: function (date) {
+        var formattedDate = "";
+
+        if (date != null) {
+            var tempDate = new Date(Date.parse(date));
+            var month = tempDate.getMonth() + 1;
+            var day = tempDate.getDate();
+            var year = tempDate.getFullYear();
+
+            formattedDate = (month < 10 ? "0" : "") + month.toString() + "/" +
+                                (day < 10 ? "0" : "") + day.toString() + "/" +
+                                year.toString();
+        }
+
+        return formattedDate;
+    },
+    ToStandardTime: function (date) {
+        var formattedValue = "";
+
+        if (date != null) {
+            var tempDate = new Date(Date.parse(date));
+            formattedValue = tempDate.toLocaleTimeString("en-us", { hour: "2-digit", minute: "2-digit" });
+        }
+
+        return formattedValue;
+    },
+    ToDateAndTime: function (date, time) {
+        var returnValue = date;
+
+        if (date != null && time != null) {
+            returnValue = date + (time ? " " + time : "");
+        }
+
+        return returnValue;
+    },
+    AddDays: function (date, daysToAdd) {
+        var returnValue = date;
+        var tempDate = new Date(Date.parse(date));
+
+        if (daysToAdd > 0) {
+            tempDate.setDate(tempDate.getDate() + daysToAdd);
+            returnValue = tempDate;
+        }
+
+        return returnValue;
+    },
+    GetDateDiffInDays: function (date1, date2) {
+        var dateDiff = null;
+
+        if (date1 != null && date2 != null) {
+            var tempDate1 = new Date(date1);
+            var tempDate2 = new Date(date2);
+
+            var timeDiff = (tempDate2.getTime() - tempDate1.getTime());
+
+            // if diff < 0 use Math.ceil to round appropriately for what we want
+            // if diff >= 0 use Math.floor
+            dateDiff = timeDiff < 0 ? Math.ceil(timeDiff / Constants.MillisecondsPerDay()) : Math.floor(timeDiff / Constants.MillisecondsPerDay());
+        }
+
+        return dateDiff;
+    }
+}

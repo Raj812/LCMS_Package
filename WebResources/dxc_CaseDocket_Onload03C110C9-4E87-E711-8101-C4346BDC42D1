@@ -1,0 +1,489 @@
+﻿/// <reference path="Common.js" />
+/// <reference path="jquery_1.11.2.min.js" />
+/// <reference path="knockout_3.3.0.js" />
+/// <reference path="knockout_postbox.min.js" />
+/// <reference path="bootstrap.min.js" />
+/// <reference path="bootbox.min.js" />
+/// <reference path="XrmSvcToolkit.js" />
+
+/// <reference path="Utilities.DateTime.js" />
+/// <reference path="DataContext.js" />
+/// <reference path="Models.js" />
+/// <reference path="Services.XrmService.js" />
+/// <reference path="Services.Data.js" />
+
+
+FormTypes = {
+    All: 0,
+    CRM_FORM_TYPE_CREATE: 1,
+    CRM_FORM_TYPE_UPDATE: 2,
+    CRM_FORM_TYPE_PROPERTIES: 3,
+    CRM_FORM_TYPE_DEACTIVATED: 4,
+    CRM_FORM_TYPE_QUICK_CREATE: 5,
+    CRM_FORM_TYPE_BULK_EDIT: 6
+};
+
+RequirementLevel = {
+    NotRequired: "none",
+    Required: "required",
+    Recommended: "recommended"
+};
+
+Elem = {
+    Division: { Type: 'field', Id: 'dxc_division' },
+    ActivityType: { Type: 'field', Id: 'dxc_activitytypeid' },
+    ActivityDate: { Type: 'field', Id: 'actualstart' },
+    AmmountClaimed: { Type: 'field', Id: 'dxc_amountclaimed' },
+    Participant: { Type: 'field', Id: 'customers' },
+    ClerkOwner: { Type: 'field', Id: 'organizer' },
+//    CourtDateTime: { Type: 'field', Id: 'dxc_courtdatetime' },
+//    CourtRoom: { Type: 'field', Id: 'dxc_case_courtroomid' },
+//    CourtFee: { Type: 'field', Id: 'dxc_fee' },
+//    FeeStatus: { Type: 'field', Id: 'dxc_feestatus' },
+       Judge: { Type: 'field', Id: 'ownerid' },
+//    Orders: { Type: 'field', Id: 'dxc_orders' },
+//    AttachmentRequired: { Type: 'field', Id: '' }, /* NOT in entity attribs */
+//    PaymentReceived: { Type: 'field', Id: 'dxc_paymentreceived' },
+//    JudgementAmount: { Type: 'field', Id: 'dxc_judgementamount' },
+//    FineAssessed: { Type: 'field', Id: 'dxc_finesassessed' },
+       Attorney: { Type: 'field', Id: 'dxc_attorney' },
+//    HasAttachment: { Type: 'field', Id: 'dxc_hasattachment' },
+
+//    Attorney: { Type: 'view', Id: '' }, /* Quick View: Cannot hide/show */
+    /* Old TabId: {631591fc-d612-449e-ac97-4579f4214969} */
+    Judgement: { Type: 'section', Tab: 'tab_General', Id: 'section_Judgement' },  
+    Charges: { Type: 'section', Tab: 'tab_General', Id: 'section_Charges' },      
+    Scheduling: { Type: 'section', Tab: 'tab_General', Id: 'section_Scheduling' },  
+//    Timecards: { Type: 'section', Tab: 'tab_General', Id: 'section_timecards' },  
+    Payment: { Type: 'section', Tab: 'tab_General', Id: 'section_Payment' },  
+    Signature: { Type: 'section', Tab: 'tab_Documents', Id: 'section_Signature' },  
+    Documents: { Type: 'section', Tab: 'tab_Documents', Id: 'section_Documents' },  
+//    ServicePlan: { Type: 'section', Tab: 'tab_General', Id: 'section_serviceplandetails' }   
+
+};
+
+
+// DO NOT EDIT THIS!...
+DivisionAndCategoryRules = {
+    DivisionId: Elem.Division.Id,
+    TargetFields: [],
+    TargetSections: [],
+    TargetTabs: [],
+    AddFieldRule: function (rule) { this.TargetFields.push(rule); },
+    AddSectionRule: function (rule) { this.TargetSections.push(rule); },
+    AddTabRule: function (rule) { this.TargetTabs.push(rule); }
+}
+
+
+// NOTE: This should be in the rules defs above, refactor...
+
+function initialDisplayRules() {
+    // Set Case Activity Charge as NOT required
+    Xrm.Page.getAttribute('dxc_charge').setRequiredLevel('none');
+    // Default ActivityDate to today's date if the field is blank 
+    var fieldId = 'actualstart',
+        activityDate = UIService.GetFieldValueById(fieldId);
+    if (activityDate == null || activityDate.length == 0) {
+        UIService.SetFieldValueById(fieldId, new Date());
+    }
+}
+
+function activityTypeOnChange() {
+    if (console) { console.log('ActivityType changed...'); }
+    retrieveCaseActivityType_Category(runDisplayRules);
+}
+
+function formOnLoad() {
+    initialDisplayRules();
+    activityTypeOnChange();
+}
+
+// ADD/EDIT DISPLAY RULES...
+
+// ------------------------------------------------------------------------------------------------
+// ADD FIELD RULES
+
+DivisionAndCategoryRules.AddFieldRule({
+    FieldId: Elem.ActivityDate.Id,
+    Rules: [
+        {
+            FormTypes: null,
+            ValidCategories: ['Complaint', 'Appearance', 'Bond', 'Motion', 'Filings', 'Pleas', 'Fees', 'Fines', 'Filing No Fee'],
+            ValidDivisions: ['Civil', 'Criminal', 'Section 50', 'Law', 'Fair Work Commission', 'Tribunal', 'Traffic' ],
+            ShouldShow: true,
+            Disable: false,
+            RequirementLevel: RequirementLevel.Required
+        }
+    ]
+});
+
+DivisionAndCategoryRules.AddFieldRule({
+    FieldId: Elem.Participant.Id,
+    Rules: [
+        {
+            FormTypes: null,
+            ValidCategories: ['Hearings', 'Charge', 'Pleas', 'Fees', 'Fines', 'Appearance', 'Filings', 'Appearance', 'Service', 'Complaint'],
+            ValidDivisions: ['Civil', 'Criminal', 'Tribunal', 'Section 50', 'Traffic' ],
+            ShouldShow: true,
+            Disable: false,
+            RequirementLevel: RequirementLevel.Required
+        }
+    ]
+});
+
+DivisionAndCategoryRules.AddFieldRule({
+    FieldId: Elem.Judge.Id,
+    Rules: [
+        {
+            FormTypes: null,
+            ValidCategories: ['Orders', 'Hearings', 'Trials', 'Answer', 'Charge', 'Appeal', 'Dispositions', 'Sentences'],
+            ValidDivisions: ['Civil', 'Law', 'Chancery', 'Section 50', 'Fair Work Commission', 'Tribunal', 'Domestic Relations Child Support', 'Criminal', 'Traffic'],
+            InvalidDivisions: null,
+            ShouldShow: true,
+            Disable: false,
+            RequirementLevel: RequirementLevel.NotRequired
+        }
+    ]
+});
+
+// These 2 are for the Quick Create form. The Case Activity
+// QC form does not have a "Judgement" section to hide/show
+// so we have to do these 2 individually. These rules should
+// match the rules for the Judgement section below
+//  Updated by JR on 8/22/17
+//DivisionAndCategoryRules.AddFieldRule({
+//    FieldId: Elem.JudgementAmount.Id,
+//    Rules: [
+//        {
+//            FormTypes: null,
+//            ValidDivisions: ['Civil', 'Fair Work Commission', 'Tribunal', 'Law'],
+//            ValidCategories: ['Orders', 'Judgment', 'Dispositions'],
+//            InvalidDivisions: null,
+//            ShouldShow: true,
+//            Disable: false,
+//            RequirementLevel: RequirementLevel.NotRequired
+//        }
+//    ]
+// });
+
+// DivisionAndCategoryRules.AddFieldRule({
+//    FieldId: Elem.Orders.Id,
+//    Rules: [
+//        {
+//            FormTypes: null,
+//            ValidDivisions: ['Civil', 'Fair Work Commission', 'Tribunal', 'Law'],
+//            ValidCategories: ['Judgment', 'Section 50', 'Disposition'],
+//            InvalidDivisions: null,
+//            ShouldShow: true,
+//            Disable: false,
+//            RequirementLevel: RequirementLevel.NotRequired
+//        }
+//    ]
+// });
+
+
+// ------------------------------------------------------------------------------------------------
+// ADD TAB and SECTION RULES
+
+DivisionAndCategoryRules.AddSectionRule({
+    TabId: Elem.Judgement.Tab, SectionId: Elem.Judgement.Id,
+    Rules: [
+        {
+            FormTypes: null,
+            ValidDivisions: ['Civil', 'Fair Work Commission', 'Section 50', 'Tribunal', 'Law'],
+            ValidCategories: ['Orders', 'Judgment', 'Dispositions']
+        }
+    ]
+});
+
+// DivisionAndCategoryRules.AddSectionRule({
+//    TabId: Elem.Timecards.Tab, SectionId: Elem.Timecards.Id,
+//    Rules: [
+//        {
+//            FormTypes: null,
+//            ValidDivisions: ['Criminal', 'Traffic'],
+//            ValidCategories: ['Sentences']
+//        }
+//    ]
+// });
+
+//Payment Section
+DivisionAndCategoryRules.AddSectionRule({
+    TabId: Elem.Payment.Tab, SectionId: Elem.Payment.Id,
+    Rules: [
+        {
+            FormTypes: null,
+            ValidDivisions: ['Criminal', 'Traffic', 'Section 50', 'Civil'],
+            ValidCategories: ['Payments', 'Filings', 'Complaint', 'Fees']
+        }
+    ]
+});
+
+//Signature Section
+DivisionAndCategoryRules.AddSectionRule({
+    TabId: Elem.Signature.Tab, SectionId: Elem.Signature.Id,
+    Rules: [
+        {
+            FormTypes: null,
+            ValidDivisions: ['Criminal', 'Traffic', 'Civil', 'Section 50', 'Tribunal', 'Law'],
+            ValidCategories: ['Orders', 'Judgment', 'Dispositions']
+        }
+    ]
+});
+//Documents Section
+DivisionAndCategoryRules.AddSectionRule({
+    TabId: Elem.Documents.Tab, SectionId: Elem.Documents.Id,
+    Rules: [
+        {
+            FormTypes: null,
+            ValidDivisions: ['Criminal', 'Traffic', 'Civil', 'Tribunal', 'Section 50', 'Law'],
+            ValidCategories: ['Orders', 'Judgment', 'Filings', 'Complaint', 'Dispositions']
+        }
+    ]
+});
+
+DivisionAndCategoryRules.AddSectionRule({
+    TabId: Elem.Charges.Tab, SectionId: Elem.Charges.Id, 
+    Rules: [
+        {
+            FormTypes: null,
+            ValidDivisions: ['Criminal', 'Section 50', 'Traffic'],
+            ValidCategories: ['Orders', 'Judgment', 'Dispositions', 'Fines', 'Charge', 'Pleas', 'Sentences']
+        }
+    ]
+});
+
+DivisionAndCategoryRules.AddSectionRule({
+    TabId: Elem.Scheduling.Tab, SectionId: Elem.Scheduling.Id,
+    Rules: [
+        {
+            FormTypes: null,
+            ValidDivisions: ['Civil', 'Law', 'Chancery', 'Fair Work Commission', 'Tribunal', 'Domestic Relations Child Support', 'Criminal', 'Traffic'],
+            ValidCategories: ['Hearings']  //Change to Hearings
+        }
+    ]
+});
+
+// NOTE: The rules above and the following code should be in separate AMD modules, refactor...
+
+// ************************************************************************************************
+
+//    CODE BEGINS HERE! 
+//    NON-DEVS PLEASE DO NOT EDIT BELOW THIS LINE
+
+// ************************************************************************************************
+
+DivisionAndCategoryRules.ApplyDisplayRules = function (formType, divisionName, categoryName) {
+    // debugger;
+    var fields = this.TargetFields || [],
+        sections = this.TargetSections || [],
+        tabs = this.TargetTabs || [];
+
+    // ----------------------------------------------------------------------------------------
+    // RUN FIELDS RULES
+    
+    for (var i = 0; i < (fields ? fields.length : -1); i++) {
+        var fieldData = fields[i],
+            field = UIService.GetElementById(fieldData.FieldId);
+            
+        if (field && fieldData.Rules != null && fieldData.Rules.length > 0) {
+            for (var ii = 0; ii < fieldData.Rules.length; ii++) {
+                var ruleData = fieldData.Rules[ii],
+                    formTypeValid = true;
+                // Determine if the form type is valid 
+                if (ruleData.FormTypes != null && ruleData.FormTypes.length > 0) {
+                    var index = $.inArray(formType, ruleData.FormTypes);
+                    formTypeValid = (index >= 0);
+                }
+                // Determine whether to show or hide the field
+                // This is a whitelist - only apply the rule if it applies for this division/category pair
+                var applyRule = false;
+                if (ruleData.ValidDivisions != null && ruleData.ValidDivisions.length > 0) {
+                    if (ruleData.ValidCategories != null && ruleData.ValidCategories.length > 0) {
+                        var indexDiv = $.inArray(divisionName, ruleData.ValidDivisions),
+                            indexCat = $.inArray(categoryName, ruleData.ValidCategories);
+                        applyRule = (indexDiv >= 0 && indexCat >= 0);
+                    }
+                }
+                // Apply rules to fields
+                if (applyRule && formTypeValid) {
+                    if (ruleData.ShouldShow != null) {
+                        UIService.SetElementDisplay(field, ruleData.ShouldShow);
+                    }
+                    if (ruleData.Disable != null) {
+                        UIService.SetDisableControl(field, ruleData.Disable);
+                    }
+                    if (ruleData.RequirementLevel != null) {
+                        UIService.SetRequiredLevel(field, ruleData.RequirementLevel);
+                    }
+                    if (ruleData.Action != null &&
+                        typeof (ruleData.Action) == "function") {
+                        ruleData.Action();
+                    }
+                }
+            }
+        }
+    }
+
+    // ----------------------------------------------------------------------------------------
+    // RUN SECTIONS RULES
+
+    for (var i = 0; i < (sections ? sections.length : -1); i++) {
+        var sectionData = sections[i],
+            section = UIService.GetSectionById(sectionData.TabId, sectionData.SectionId);
+
+        if (section && sectionData.Rules != null && sectionData.Rules.length > 0) {
+            for (var ii = 0; ii < sectionData.Rules.length; ii++) {
+                var ruleData = sectionData.Rules[ii], 
+                    formTypeValid = true;
+                // Determine if the form type is valid 
+                if (ruleData.FormTypes != null && ruleData.FormTypes.length > 0) {
+                    var index = $.inArray(formType, ruleData.FormTypes);
+                    formTypeValid = (index >= 0);
+                }
+                // Determine whether to show or hide the section
+                // This is a whitelist - only apply the rule if it applies for this division/category pair
+                var shouldShow = false;
+                if (ruleData.ValidDivisions != null && ruleData.ValidDivisions.length > 0) {
+                    if (ruleData.ValidCategories != null && ruleData.ValidCategories.length > 0) {
+                        var indexDiv = $.inArray(divisionName, ruleData.ValidDivisions),
+                            indexCat = $.inArray(categoryName, ruleData.ValidCategories);
+                        shouldShow = (indexDiv >= 0 && indexCat >= 0);
+                    }
+                }
+                // SHow/hide the section
+                UIService.SetSectionDisplay(section, (shouldShow && formTypeValid));
+            }
+        }
+    }
+
+    // ----------------------------------------------------------------------------------------
+    // RUN TABS RULES
+
+    for (var i = 0; i < (tabs ? tabs.length : -1); i++) {
+        var tabData = tabs[i],
+            tab = UIService.GetTabById(tabData.TabId);
+
+        if (tab && tabData.Rules != null && tabData.Rules.length > 0) {
+            for (var ii = 0; ii < tabData.Rules.length; ii++) {
+                var ruleData = tabData.Rules[ii], 
+                    formTypeValid = true;
+                // Determine if the form type is valid 
+                if (ruleData.FormTypes != null && ruleData.FormTypes.length > 0) {
+                    var index = $.inArray(formType, ruleData.FormTypes);
+                    formTypeValid = (index >= 0);
+                }
+                // Determine whether to show or hide the tab
+                // This is a whitelist - only apply the rule if it applies for this division/category pair
+                var shouldShow = false;
+                if (ruleData.ValidDivisions != null && ruleData.ValidDivisions.length > 0) {
+                    if (ruleData.ValidCategories != null && ruleData.ValidCategories.length > 0) {
+                        var indexDiv = $.inArray(divisionName, ruleData.ValidDivisions),
+                            indexCat = $.inArray(categoryName, ruleData.ValidCategories);
+                        shouldShow = (indexDiv >= 0 && indexCat >= 0);
+                    }
+                }
+                // SHow/hide the tab
+                UIService.SetTabDisplay(tab, (shouldShow && formTypeValid));
+            }
+        }
+    }
+}
+
+function showError(mssg) {
+    Xrm.Page.ui.setFormNotification(mssg, 'ERROR', 'errorMssg');
+    if (console) { console.log(mssg); }
+}
+
+function runDisplayRules(error, results) {
+    if (!error) {
+        Xrm.Page.ui.clearFormNotification('errorMssg');
+        //debugger;
+        var formType = UIService.GetFormType(),
+            divisionName = LookupFieldService.GetLookupNameById(DivisionAndCategoryRules.DivisionId),
+           category = results[0].dxc_CategoryId,
+ //              category = results[0].dxc_category,
+            categoryName = category.Name;
+
+        if (console) { console.log('DivisionName = %s, CategoryName = %s', divisionName, categoryName); }
+        //debugger;
+        if (divisionName && divisionName.length > 0) {
+            if (categoryName && categoryName.length > 0) {
+                DivisionAndCategoryRules.ApplyDisplayRules(formType, divisionName, categoryName);
+            } else {
+                showError('Error CategoryName is blank. Cannot run dispay rules to show/hide fields.');
+            }
+        } else {
+            showError('Error DivisionName is blank. Cannot run dispay rules to show/hide fields.');
+        }
+    } else {
+        showError('Error getting CaseActivityType.Category: ' + error);
+    }
+}
+//------------------------------------------------
+//Retrieve Case Activity Type Category
+//----------------------------------------------
+ 
+function retrieveCaseActivityType_Category(resultsCallback) {
+    //var isQuickCreate = UIService.IsQuickCreateForm();
+    var isQuickCreate = UIService.GetFieldValueById('dxc_isqcform') || false;
+    if (console) { console.log('IsQuickCreateForm = ', isQuickCreate); }
+    //debugger;
+    var caseActivityTypeId = LookupFieldService.GetLookupValueById(Elem.ActivityType.Id),
+        oDataPath = UIService.GetODataPath(isQuickCreate),
+        filterString = "/dxc_caseactivitytypeSet?$filter=dxc_caseactivitytypeId eq guid'" + caseActivityTypeId + "'",
+        selectString = "&$select=dxc_CategoryId",
+ //          selectString = "&$select=dxc_category",
+        url = oDataPath + filterString + selectString;
+
+    if (console) { console.log('Ajax OData Url = ', url); }
+
+    // Call CRM OData service to get entity
+    if (caseActivityTypeId && caseActivityTypeId.length > 0) {
+        AjaxService.Execute({
+            type: "GET",
+            contentType: "application/json; charset=utf-8",
+            datatype: "JSON",
+            url: url,
+            beforeSend: function (XMLHttpRequest) {
+                // Specifying this header ensures that the results will be returned as JSON.     
+                XMLHttpRequest.setRequestHeader("Accept", "application/json");
+            },
+            success: function (data, textStatus, XmlHttpRequest) {
+                resultsCallback(null, data.d.results);
+            },
+            error: function (XmlHttpRequest, textStatus, errorThrown) {
+                resultsCallback(XmlHttpRequest.responseText);
+            }
+        });
+    }
+
+}
+
+function TotalHours ()
+
+{ 
+var val1 = Xrm.Page.getAttribute('dxc_totalduration').getValue(); 
+//var val2 = Xrm.Page.getAttribute('fieldname').getValue();
+
+if(val1==null)return; 
+//if(val2==null)return;
+
+var result = val1 / 60; 
+Xrm.Page.getAttribute('dxc_totalhours').setValue(result);
+
+}
+
+function TotalServiceHours ()
+
+{ 
+var val1 = Xrm.Page.getAttribute('dxc_servicehours').getValue(); 
+var val2 = Xrm.Page.getAttribute('dxc_totalhours').getValue();
+
+if(val1==null)return; 
+if(val2==null)return;
+
+var result = val1 - val2; 
+Xrm.Page.getAttribute('dxc_servicehoursrequired').setValue(result);
+
+}

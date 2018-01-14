@@ -1,0 +1,31 @@
+ function DisplayIcon (rowData, userLCID) {  
+debugger;
+   var rowString = JSON.parse(rowData);  
+   var columnValue = rowString.dxc_attachmentstatus_Value;  
+   var imgName = "";  
+   var tooltip = "";  
+   switch (columnValue) {  
+     case 1:  
+       imgName = "dxc_/images/missing.png";  
+       tooltip = "Missing Document";  
+       break;  
+     case 2:  
+       imgName = "dxc_/images/attached.png";  
+       tooltip = "Document Attached";  
+       break;  
+     case 3:  
+       imgName = "dxc_/images/draft.png";  
+       tooltip = "Document is a Draft";  
+       break;  
+     case 4:  
+       imgName = "dxc_/images/rejected.png";  
+       tooltip = "Document has been Rejected";  
+       break;  
+     case 5:  
+       imgName = "dxc_/images/sealed.png";  
+       tooltip = "Document has been Sealed";  
+       break;  
+   }  
+   var resultarray = [imgName, tooltip];  
+   return resultarray;  
+ }  

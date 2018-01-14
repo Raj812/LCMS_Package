@@ -1,0 +1,112 @@
+var CaseAction = (function() {
+	var filterBuilt = false;
+	var accountFilter = "";
+	var contactFilter = "";
+
+	var regardAttr;
+	var customersCtl;
+console.log('CaseAction - load');	
+
+	setFilter = function (lkupCtl, entName, pkCol, filterList) {
+console.log('CaseAction - setFilter ' + entName + ' ' + pkCol + ' ' + filterList);	
+		var customFilter;
+		if (filterList == ""){
+			customFilter = "<filter type='and'><condition attribute='" + pkCol + "' operator='null' /></filter>";
+		}
+		else {
+			customFilter = "<filter type='and'><condition attribute='" + pkCol + "' operator='in' >" + filterList + "</condition></filter>";
+		}
+console.log('CaseAction - ' + customFilter);
+		lkupCtl.addCustomFilter(customFilter, entName);
+	}
+
+	getParticipants = function () {
+console.log('CaseAction - GetParticipants');	
+		var regardingObj = regardAttr.getValue();
+		if (regardingObj == null) {
+			return;
+		}
+		var entType = regardingObj[0].entityType;
+		if (entType != 'incident'){
+			alert('Regarding Object type of: ' + entType + ' unexpected, expecting incident.');
+			return;
+		}
+		var caseId = regardingObj[0].id.replace('{', '').replace('}', '');
+		var caseName = regardingObj[0].name;
+
+		CaseAction.ResetFilter();
+		
+console.log('CaseAction - Getting participant list');	
+		var httpReq = new XMLHttpRequest();
+		httpReq.open("GET", Xrm.Page.context.getClientUrl() + "/api/data/v8.2/dxc_caseparticipants?$select=_dxc_participantname_value&$filter=_dxc_caseparticipantsid_value eq " + caseId, true);
+		httpReq.setRequestHeader("OData-MaxVersion", "4.0");
+		httpReq.setRequestHeader("OData-Version", "4.0");
+		httpReq.setRequestHeader("Accept", "application/json");
+		httpReq.setRequestHeader("Content-Type", "application/json; charset=utf-8");
+		httpReq.setRequestHeader("Prefer", "odata.include-annotations=\"*\",odata.maxpagesize=10");
+		httpReq.onreadystatechange = function() {
+			if (this.readyState === 4) {
+console.log('CaseAction - Parsing results');	
+				httpReq.onreadystatechange = null;
+				if (this.status === 200) {
+					var results = JSON.parse(this.response);
+					for (var i = 0; i < results.value.length; i++) {
+						var participantId = results.value[i]["_dxc_participantname_value"];
+						if (participantId != null){
+							//var _dxc_participantname_value_formatted = results.value[i]["_dxc_participantname_value@OData.Community.Display.V1.FormattedValue"];
+							var participantType = results.value[i]["_dxc_participantname_value@Microsoft.Dynamics.CRM.lookuplogicalname"];
+							CaseAction.AddFilter(participantType, participantId);
+						}
+					}
+console.log('CaseAction - Filter Complete');	
+					CaseAction.SetFilter();
+				} else {
+					CaseAction.ResetFilter();
+					Xrm.Utility.alertDialog(this.statusText);
+				}
+			}
+		};
+		httpReq.send();
+	}
+ 
+    return {
+        OnLoad: function() {
+console.log('CaseAction - OnLoad');	
+			//debugger;
+			regardAttr = Xrm.Page.getAttribute("regardingobjectid");
+			customersCtl = Xrm.Page.getControl("customers");
+			
+			getParticipants();
+			customersCtl.addPreSearch(CaseAction.FilterParticipants);
+        },
+ 
+        AddFilter: function(entityType, entityId) {
+console.log('CaseAction - AddFilter' + entityType + ' - ' + entityId);
+			if (entityType == 'contact'){
+				contactFilter += "<value>" + entityId.replace('{', '').replace('}', '') + "</value>";
+			}
+			else if (entityType == 'account'){
+				accountFilter += "<value>" + entityId.replace('{', '').replace('}', '') + "</value>";
+			}
+        },
+ 
+        SetFilter: function() {
+			filterBuilt = true;
+        },
+ 
+        ResetFilter: function() {
+			filterBuilt = false;
+			accountFilter = "";
+			contactFilter = "";
+        },
+ 
+        FilterParticipants: function() {
+console.log('CaseAction - FilterParticipants');	
+			if (customersCtl == null) {return;}
+			if (!filterBuilt) {return;}
+
+			setFilter(customersCtl, 'account', 'accountid', accountFilter);
+			setFilter(customersCtl, 'contact', 'contactid', contactFilter);
+        }
+    };  
+})();  

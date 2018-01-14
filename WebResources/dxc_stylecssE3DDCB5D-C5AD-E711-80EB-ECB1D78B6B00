@@ -1,0 +1,27 @@
+DIV.DropArea {
+    height: 100px;
+    width: auto;
+    background-color: #e6f2fb;
+    border: thin dashed #a1cbe9;
+    font-family: Segoe UI,Tahoma,Arial;
+    font-size: large;
+    font-weight: bold;
+    text-align: center;
+    line-height: 100px;
+}
+
+DIV.MessageArea {
+    height: auto;
+    width: auto;
+    font-family: Segoe UI,Tahoma,Arial;
+    color: #000080;
+    font-size: 10px;
+}
+
+DIV.FileListArea {
+    height: auto;
+    width: auto;
+    font-family: Segoe UI,Tahoma,Arial;
+    color: #000080;
+    font-size: 10px;
+}

@@ -1,0 +1,114 @@
+<html><!--This is a Image Gallery unity, which can be used with any entity which have
+relationship with Notes, this web resource will show all the images attached to notes--><head>
+  <style type="text/css">
+    
+   .left-div {
+    display: inline-block;
+    cursor:pointer; 
+      }
+.right-div {
+    cursor:pointer; 
+    display: inline-block;
+    }
+</style>
+ <meta charset="utf-8"><style type="text/css">P { margin: 0; }</style><meta></head><body style="word-wrap: break-word;" onfocusout="parent.setEmailRange();">
+ <script src="../../ClientGlobalContext.js.aspx"></script>
+ <script src="../Script/SDK.REST.js" type="text/javascript"></script>
+ <script type="text/javascript">
+  //global variable
+   var currentImage = 0; 
+   var img = document.createElement("IMG");
+   var images = new Array;
+   var TotalImages=0;
+   var SectionName;
+   var TabName;
+  document.onreadystatechange = function () {
+   if (document.readyState == "complete") {
+      //get query parameters
+	  var queryParam = GetGlobalContext().getQueryStringParameters().data;
+	  var fields = queryParam.split(",");
+	   TabName=fields[0];
+	   SectionName=fields[1];
+	   //hide control in case form create
+       if(isformtypeCreate())
+	   showImageGalery(TabName,SectionName,false)
+	   else{
+	   showImageGalery(TabName,SectionName,true)
+       getnotesImages();}
+   }
+  }
+//check for form create mode
+function isformtypeCreate()
+{
+if(window.parent.Xrm.Page.ui.getFormType()==1)//create mode
+return true;
+else
+return false;
+}
+//hide/show image gallery
+function showImageGalery(tabname,sectionname,flag)
+{
+window.parent.Xrm.Page.ui.tabs.get(tabname).sections.get(sectionname).setVisible(flag);
+}
+//get images from notes
+function getnotesImages()
+{ 
+   var regardingObjectId=window.parent.Xrm.Page.data.entity.getId();
+   var entitySchemaName="Annotation";
+   var odataQuery = "?$select=AnnotationId,DocumentBody,MimeType&" +
+                    "$filter=ObjectId/Id eq guid'" + regardingObjectId +
+                    "' and IsDocument eq true and startswith(MimeType,'image/') ";
+	if(typeof(SDK)!="undefined")
+	{
+   //The retrieveAccountsCallBack function is passed through as the successCallBack.
+   SDK.REST.retrieveMultipleRecords(entitySchemaName, odataQuery, getnotesImagesCallback, function (error) { alert(error.message); }, function(){});
+   }
+   else
+   {alert("Not able to load REST.SDK library");}
+}
+//callback method
+ function getnotesImagesCallback(resultSet)
+	{
+	               if (resultSet.length > 0) {
+				   TotalImages=resultSet.length;
+               		for(i=0; i<resultSet.length; i++)
+					{
+					var mimeType = resultSet[i].MimeType;
+                    var body = resultSet[i].DocumentBody;
+					images[i]="data:" + mimeType + ";base64," + body;
+					}
+				changeImage(0);
+		
+				}
+				else
+				showImageGalery(TabName,SectionName,false);
+	}
+	  //change image 
+	  function changeImage(counter)
+	  {
+	  //for next image
+	 currentImage += counter;
+	  if(currentImage!=TotalImages)
+	  {
+	 	  if(currentImage<0)
+	  currentImage=0;
+	  }	  else
+	  {
+	  currentImage=0;
+	  }
+	  //for previous image
+	  img.src=images[currentImage];
+	  document.getElementById('imageGallery').appendChild(img);
+      } 
+
+ </script>
+<div>
+
+
+ <input onclick="getnotesImages()" type="image" alt="Reload" src="../Image/Refresh.png">
+ <input class="left-div" onclick="changeImage(-1);" type="image" alt="Go Next" src="../Image/Back.png">
+ <input class="right-div" onclick="changeImage(1);" type="image" alt="Go Back" src="../Image/Next.png">
+  </div> 
+  <div id="imageGallery" style="width: 100%; overflow: hidden;">
+ </div>
+ </body></html>

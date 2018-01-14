@@ -1,0 +1,150 @@
+/*
+function formOnLoad () {
+    if (console != undefined) console.log('Form Case Participant onLoad fired');
+    $(document).ready(function () {
+
+    });
+}
+
+function participantTypeOnChange(context) {
+    var participantType = UIService.GetFieldTextById('dxc_participanttype').toUpperCase();
+
+    if (console != undefined) console.log('ParticipantType =', participantType);
+
+    switch (participantType) {
+        case 'INDIVIDUAL':
+            //UIService.ClearFieldById('dxc_participantaccountid');
+            UIService.SetFieldValueById('dxc_participantaccountid', null);
+            break;
+        case 'ORGANIZATION':
+            //UIService.ClearFieldById('dxc_participantcontactid');
+            UIService.SetFieldValueById('dxc_participantcontactid', null);
+            break;
+    }
+
+}
+*/
+
+/// <reference path="/intellisense/XrmPage-vsdoc.js" />
+/// <reference path="jquery_1.11.2.min.js" />
+/// <reference path="Common.js" />
+
+// *****************************************************************************
+// constants
+// *****************************************************************************
+
+// *****************************************************************************
+// Methods
+// *****************************************************************************
+ParticipantTypeDataService = {
+    ParticipantTypeId: "dxc_participanttype",
+    TargetFields: [
+        { FieldId: "dxc_participantcontactid", ValidParticipantTypes: ["Individual"], InvalidParticipantTypes: null },
+        { FieldId: "dxc_participantaccountid", ValidParticipantTypes: ["Organization"], InvalidParticipantTypes: null }
+    ],
+    TargetSections: [
+        { TabId: "general", SectionId: "ParticipantContactData", ValidParticipantTypes: ["Individual"], InvalidParticipantTypes: null },
+        { TabId: "general", SectionId: "ParticipantOrganizationData", ValidParticipantTypes: ["Organization"], InvalidParticipantTypes: null }
+    ],
+    IsIndividual: function() {
+        var participantTypeName = UIService.GetFieldTextById(this.ParticipantTypeId);
+        var isIndividual = (participantTypeName.contains("Individual"));
+        return isIndividual;
+    }, 
+    IsOrganization: function () {
+        var participantTypeName = UIService.GetFieldTextById(this.ParticipantTypeId);
+        var isOrganization = (participantTypeName.contains("Organization"));
+        return isOrganization;
+    },
+    ApplyDisplayRules: function () {
+        // debugger;
+        var participantTypeName = UIService.GetFieldTextById(this.ParticipantTypeId);
+
+        var fields = this.TargetFields;
+
+        $.each(fields, function (index, value) {
+            var fieldData = value;
+            var shouldClear = false;
+
+            if (fieldData.ValidParticipantTypes != null && fieldData.ValidParticipantTypes.length > 0) {
+                // this is a whitelist - only show the section if it applies for this division
+                var index = $.inArray(participantTypeName, fieldData.ValidParticipantTypes);
+                shouldClear = (index < 0);
+            }
+            else if (fieldData.InvalidParticipantTypes != null && fieldData.InvalidParticipantTypes.length > 0) {
+                // this is a blacklist - hide sections that don't apply for this division
+                var index = $.inArray(participantTypeName, fieldData.InvalidParticipantTypes);
+                shouldClear = (index >= 0);
+            }
+
+            if (shouldClear) {
+                UIService.ClearFieldById(fieldData.FieldId);
+                UIService.FireOnChangeById(fieldData.FieldId);
+            }
+        });
+    }
+}
+
+AttorneyTypeDataService = {
+    AttorneyTypeId: "dxc_attorneytype",
+    TargetFields: [
+        { FieldId: "dxc_attorneyid", ValidParticipantTypes: ["Individual"], InvalidParticipantTypes: null },
+        { FieldId: "dxc_attorneyorganizationid", ValidParticipantTypes: ["Organization"], InvalidParticipantTypes: null }
+    ],
+    IsIndividual: function () {
+        var participantTypeName = UIService.GetFieldTextById(this.ParticipantTypeId);
+        var isIndividual = (participantTypeName.contains("Individual"));
+        return isIndividual;
+    },
+    IsOrganization: function () {
+        var participantTypeName = UIService.GetFieldTextById(this.ParticipantTypeId);
+        var isOrganization = (participantTypeName.contains("Organization"));
+        return isOrganization;
+    },
+    ApplyDisplayRules: function () {
+        // debugger;
+        var attorneyTypeName = UIService.GetFieldTextById(this.AttorneyTypeId);
+
+        var fields = this.TargetFields;
+
+        $.each(fields, function (index, value) {
+            var fieldData = value;
+            var shouldClear = false;
+
+            if (fieldData.ValidParticipantTypes != null && fieldData.ValidParticipantTypes.length > 0) {
+                // this is a whitelist - only show the section if it applies for this division
+                var index = $.inArray(attorneyTypeName, fieldData.ValidParticipantTypes);
+                shouldClear = (index < 0);
+            }
+            else if (fieldData.InvalidParticipantTypes != null && fieldData.InvalidParticipantTypes.length > 0) {
+                // this is a blacklist - hide sections that don't apply for this division
+                var index = $.inArray(attorneyTypeName, fieldData.InvalidParticipantTypes);
+                shouldClear = (index >= 0);
+            }
+
+            if (shouldClear) {
+                UIService.ClearFieldById(fieldData.FieldId);
+                UIService.FireOnChangeById(fieldData.FieldId);
+            }
+        });
+    }
+}
+
+ParticipantType_Onchange = function () {
+    // debugger;
+    ParticipantTypeDataService.ApplyDisplayRules();
+}
+
+AttorneyType_Onchange = function () {
+    // debugger;
+    AttorneyTypeDataService.ApplyDisplayRules();
+}
+
+function Form_Onload() {
+    // debugger;
+    $(document).ready(function () {
+        // debugger;
+        ParticipantTypeDataService.ApplyDisplayRules();
+        AttorneyTypeDataService.ApplyDisplayRules();
+    });
+}

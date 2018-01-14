@@ -1,0 +1,8 @@
+function SetTodaysDateOnLoad()
+{
+    var actualstart = Xrm.Page.getAttribute("actualstart").getValue();
+       if (actualstart == null)
+{
+ Xrm.Page.getAttribute("actualstart").setValue(Date.now());
+}
+}

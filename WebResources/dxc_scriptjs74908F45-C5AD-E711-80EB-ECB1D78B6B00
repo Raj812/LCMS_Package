@@ -1,0 +1,287 @@
+var CrmXpress = CrmXpress || {};
+CrmXpress.Controls = CrmXpress.Controls || {};
+
+CrmXpress.Controls.DnDUpload = (function () {
+    var pub = {};
+
+    // Control refresh and reload of Notes Control
+    pub.LoadNotesControl = null;
+    pub.UploadTarget = "Notes";
+    pub.EmailAttachmentsGridName = "attachmentsGrid";
+
+    // Init the control
+    pub.Init = function () {
+        if (!Validate()) {
+            return;
+        }
+
+        pub.LoadNotesControl = true;
+
+        // Setup page context
+        document.recordId = GetParam("id");
+        document.typeName = GetParam("typename");
+
+        if (document.recordId.length < 1 || document.typeName < 1) {
+            ShowMessage("Record ID and\or Object type code is not available. Please check \"Pass record object-type code and unique identifier as parameters\" on Form Properties.");
+            return;
+        }
+        var dropArea = document.getElementById("DropArea");
+
+        // Configure event listeners
+        dropArea.addEventListener("dragenter", EventDisposer, false);
+        dropArea.addEventListener("dragexit", EventDisposer, false);
+        dropArea.addEventListener("dragover", EventDisposer, false);
+        dropArea.addEventListener("drop", OnDrop, false);
+    }
+
+    // Drop event handlers
+    function OnDrop(event) {
+        EventDisposer(event);
+        var files = event.dataTransfer.files;
+
+        // Only call the handler if 1 or more files was dropped.
+        if (files.length > 0) {
+            UploadFiles(files);
+        }
+    }
+
+    // Stops propagation of the events to achieve drag and drop functionality on the control
+    function EventDisposer(event) {
+        event.stopPropagation();
+        event.preventDefault();
+    }
+
+    // Uploads the file/s, remember this "upload" is to browsers' local cache
+    function UploadFiles(files) {
+        document.FileList = files;
+        document.getElementById("MessageArea").innerHTML = "";
+
+        for (var i = 0; i < files.length; i++) {
+            var file = files[i];
+
+            ShowMessage("Processing " + file.name);
+
+            var fileReader = new FileReader();
+
+            // event handlers to track progress
+            // Use this if you need to show real time progress of the upload - Remember this is time taken to load data in to the browser's local store. 
+            // Uploading of data to server is done via a CRM API call and can not be monitored for progress.
+            // fileReader.onprogress = OnProgress; 
+
+            fileReader.onloadend = OnLoadEnd;
+            fileReader.onerror = OnError;
+
+            // begin the read operation
+            fileReader.readAsDataURL(file);
+        }
+    }
+
+    function OnError(event) {
+        ShowMessage("An error occured during file upload: " + event.target.error.name);
+    }
+
+    // This function is not currently being used, feel free to comment it out. Refer to UploadFiles to understand its usage.
+    function OnProgress(event) {
+        if (event.lengthComputable) {
+            document.getElementById("ProgressPercentageArea").innerHTML = (event.loaded / event.total) * 100 + "% complete";
+        }
+    }
+
+    // Processes each file once it is loaded in browsers' local cache
+    function OnLoadEnd(event) {
+        var fileData = event.target.result;
+        var mimeType = GetMimeType(fileData);
+        var fileName = GetFileName(event.loaded, mimeType);
+
+        fileData = fileData.substring(fileData.indexOf(";base64,") + 8, fileData.length);
+
+        // dirty hack to handle PDF and some other files where mimetype can not be determined
+        if (mimeType === "") {
+            mimeType = fileName.substring(fileName.lastIndexOf(".") + 1, 3);
+        }
+        if (pub.UploadTarget === "Notes") {
+            CreateNoteAttachment(fileData, fileName, mimeType, document.typeName, document.recordId);
+        }
+        else {
+            CreateEmailAttachment(fileData, fileName, mimeType, document.typeName, document.recordId);
+        }
+    }
+
+    // Validates certain conditions, can be extended further to add your own validations for example - checking a security role
+    function Validate() {
+        try {
+            if (this.parent === null || this.parent.Xrm === undefined) {
+                ShowValidationMessage("This web resource needs to be hosted on a CRM Form.");
+                return false;
+            }
+            else if (this.parent.Xrm.Page.ui.getFormType() != 2) {
+                ShowValidationMessage("Please save the record before you try to upload files.");
+                return false;
+            }
+        }
+        catch (exception) {
+            ShowValidationMessage(exception.message)
+            return false;
+        }
+        return true;
+    }
+
+    // Prepares request to create and attachment, prepares the body and executes it. 
+    // Once executed successfully, it will also refresh the notes control based on LoadNotesControl variable
+    function CreateNoteAttachment(fileBody, fileName, fileType, entityName, recordId) {
+
+        try {
+            var post = {};
+
+            post.DocumentBody = fileBody;
+
+            post.NoteText = "Attachment " + fileName;
+            post.Subject = "Attachment " + fileName;
+
+            post.FileName = fileName;
+            post.MimeType = fileType;
+            post.ObjectId = {};
+            post.ObjectId.LogicalName = entityName;
+            post.ObjectId.Id = recordId;
+
+            post.ObjectTypeCode = entityName;
+
+            var result = CreateEntity(post, "Annotation");
+            if (result) {
+                ShowMessage("Uploaded " + fileName + " Successfully.");
+                // Refresh Notes Control to reflect the files you have just uploaded - CRM 2013 & CRM 2015
+                // This is unsupported
+                if (pub.LoadNotesControl) {
+                    try {
+                        this.parent.window.document.getElementById("notescontrol").control.setActiveTab("NotesTab");
+                    }
+                    catch (exception) {
+                        // Bad practice!!!
+                    }
+
+                    try {
+                        // Refresh Notes Control to reflect the files you have just uploaded - CRM 2011
+                        this.parent.window.document.getElementById("notescontrol").click();
+                    } catch (exception) {
+                        // Bad practice!!!
+                    }
+
+                }
+            }
+            else {
+                ShowMessage("File " + fileName + " was not uploaded. Please Contact your System Administrator.");
+            }
+        }
+        catch (excetpion) {
+            ShowMessage("An error occured during file upload: " + excetpion.message);
+        }
+    }
+
+    function CreateEmailAttachment(fileBody, fileName, fileType, entityName, recordId) {
+
+        try {
+            var attachment = {};
+
+            attachment.Body = fileBody;
+
+            attachment.Subject = "Attachment " + fileName;
+
+            attachment.FileName = fileName;
+            attachment.MimeType = fileType;
+            attachment.ObjectId = {};
+            attachment.ObjectId.LogicalName = entityName;
+            attachment.ObjectId.Id = recordId;
+
+            attachment.ObjectTypeCode = entityName;
+
+            var result = CreateEntity(attachment, "ActivityMimeAttachment");
+            if (result) {
+                ShowMessage("Uploaded " + fileName + " Successfully.");
+                try {
+                    this.parent.Xrm.Page.getControl(pub.EmailAttachmentsGridName).refresh();
+                }
+                catch (exception) {
+                    // Bad practice!!!
+                }
+            }
+            else {
+                ShowMessage("File " + fileName + " was not uploaded. Please Contact your System Administrator.");
+            }
+        }
+        catch (excetpion) {
+            ShowMessage("An error occured during file upload: " + excetpion.message);
+        }
+    }
+
+    // Creates attachment in CRM
+    function CreateEntity(entityBody, entityName) {
+
+        var jsonEntity = JSON.stringify(entityBody);
+
+        var createEntityReq = new XMLHttpRequest();
+
+        var ODataPath = GetUrl() + "/XRMServices/2011/OrganizationData.svc";
+
+        createEntityReq.open("POST", ODataPath + "/" + entityName + "Set", false);
+
+        createEntityReq.setRequestHeader("Accept", "application/json");
+
+        createEntityReq.setRequestHeader("Content-Type", "application/json; charset=utf-8");
+
+        createEntityReq.send(jsonEntity);
+        return JSON.parse(createEntityReq.responseText).d;
+
+    }
+
+    // Gets Filenames by checking filesize and MIME-type
+    function GetFileName(fileSize, mimeType) {
+        for (var i = 0; i < document.FileList.length; i++) {
+            if (document.FileList[i].size === fileSize && document.FileList[i].type === mimeType) {
+                return document.FileList[i].name;
+            }
+        }
+    }
+
+    // Determines MIME Type of a given file
+    function GetMimeType(fileData) {
+        var result = fileData.substring(5, fileData.indexOf(";base64,"));
+        if (!result) {
+            result = "";
+        }
+        return result;
+    }
+
+    // Get Parameters from URL
+    function GetParam(key) {
+        key = key.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
+        var regex = new RegExp("[\\?&]" + key + "=([^&#]*)");
+        var results = regex.exec(parent.decodeURIComponent(window.location.href));
+        if (results == null) {
+            return "";
+        } else {
+            return results[1];
+        }
+    }
+
+    function ShowMessage(message) {
+        document.getElementById("MessageArea").innerHTML += message + "</br>";
+    }
+
+    function ShowValidationMessage(message) {
+        document.getElementById("DropAreaText").innerHTML = message;
+    }
+
+    function GetUrl() {
+        if (parent.Xrm.Page.context.getClientUrl) {
+            return parent.Xrm.Page.context.getClientUrl();
+        }
+        else if (parent.Xrm.Page.context.getServerUrl) {
+            return parent.Xrm.Page.context.getServerUrl();
+        }
+        else {
+            ShowMessage("This version of CrmXpress Upload Control is only compatible with Dynamics CRM Server 2013 and Dynamics CRM Server 2015.");
+        }
+    }
+
+    return pub;
+}());

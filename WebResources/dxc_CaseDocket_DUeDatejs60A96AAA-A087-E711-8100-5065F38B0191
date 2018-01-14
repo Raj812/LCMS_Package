@@ -1,0 +1,46 @@
+function displayIconTooltip(rowData, userLCID) {
+    var str = JSON.parse(rowData);
+    var coldata = str.scheduledend_Value;
+    var statecode = str.statecode_Value;
+
+    var imgName = "";
+    var tooltip = "";
+    var now = new Date();
+    var warn = new Date();
+    warn = warn.setDate(now.getDate() + 5);
+    var targetDate = new Date(coldata);
+
+       if (statecode == "Completed")
+       {
+        imgName = "dxc_/Image/completed.png";
+        tooltip = "Completed";
+    }
+
+    else if  (statecode == "Canceled")
+    {
+        imgName = "dxc_/Image/cancel.png";
+        tooltip = "Canceled";
+    }
+   
+    else if (targetDate > warn)
+    {
+        imgName = "dxc_/Image/green.png";
+        tooltip = "Good";
+    }
+    else if (targetDate < now)
+    {
+        imgName = "dxc_/Image/red.png";
+        tooltip = "Overdue or Not set";
+    }
+    else 
+    {
+        imgName = "dxc_/Image/amber.png";
+        tooltip = "Approaching Due Date";
+    }
+
+
+//alert (imgName + ' - ' + tooltip);
+    var resultarray = [imgName, tooltip];
+    return resultarray;
+
+}

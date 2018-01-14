@@ -1,0 +1,27 @@
+<html><head>
+    <meta charset="utf-8">
+    <title>Mcs.Crm.Controls.Upload</title>
+    <script type="text/javascript" src="Script.js"></script>
+    <script type="text/javascript" src="Json2.js"></script>
+    <link href="Style.css" type="text/css" rel="stylesheet">
+<meta></head>
+<body>
+    <div id="ControlBody">
+        <div id="DropArea" class="DropArea">
+            <div id="DropAreaText">
+                Drag and Drop files here
+            </div>
+        </div>
+        <div id="ProgressArea">
+            <div id="MessageArea" class="MessageArea"></div>
+            <div id="ProgressPercentageArea"></div>
+        </div>
+        <div id="FileListArea" class="FileListArea">
+        </div>
+    </div>
+
+
+<script type="text/javascript">
+    var dndControl = CrmXpress.Controls.DnDUpload;
+    dndControl.Init();
+</script></body></html>
